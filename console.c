@@ -259,13 +259,10 @@ int is_not_empty_char(int c)
   return c != 0 && input.e-input.r < INPUT_BUF;
 }
 
-void move_buffer(int pos)
+void move_buffer(int pos, int count)
 {
-  // move buffer from pos to end
-  for (int i = INPUT_BUF - 1; i > pos; i--)
-  {
-    input.buf[i] = input.buf[i - 1];
-  }
+  for (int i = INPUT_BUF; i - count >= pos; i--)
+    input.buf[i] = input.buf[i - count];
 }
 
 void handle_end_line_in_buffer()
@@ -277,9 +274,9 @@ void save_char_in_buffer(int c)
 {
   if (c == '\n')
     handle_end_line_in_buffer();
-    
+
   int pos = input.e + (input.current_pos - input.end_pos);
-  move_buffer(pos);
+  move_buffer(pos, 1);
   input.buf[pos] = c;
   input.e++;
 }
