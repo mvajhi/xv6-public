@@ -355,17 +355,22 @@ void print_buffer(int start, int end, int output)
   }
 }
 
-void show_char_in_output(int c)
+void print_char(int c)
 {
-  input.current_pos++;
-  input.end_pos++;
-
   int len_to_end = input.end_pos - input.current_pos;
 
   putc(c, ALL_OUTPUT);
   clean_with_count(len_to_end, DEVICE_SCREEN);
   print_buffer(input.current_pos, input.end_pos, ALL_OUTPUT);
   go_to_left(len_to_end, ALL_OUTPUT);
+}
+
+void show_char_in_output(int c)
+{
+  input.current_pos++;
+  input.end_pos++;
+
+  print_char(c);
 }
 
 void store_char(int c)
@@ -387,6 +392,33 @@ void handle_char_input(int c)
   }
 }
 
+void remove_end_output(int output)
+{
+  int len_to_end = input.end_pos - input.current_pos;
+
+  write_repeated(len_to_end + 1, KEY_RT, output);
+  putc(BACKSPACE, output);
+  go_to_left(len_to_end, output);
+}
+
+void clean_host_terminal()
+{
+  remove_end_output(HOST_TERMINAL);
+}
+
+void handle_backspace()
+{
+  input.current_pos--;
+  input.end_pos--;
+  input.e--;
+
+  int pos = input.e + input.current_pos - input.end_pos;
+  move_buffer(pos, -1);
+
+  print_char(BACKSPACE);
+  clean_host_terminal();
+}
+
 void consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
@@ -401,24 +433,17 @@ void consoleintr(int (*getc)(void))
       doprocdump = 1;
       break;
     case C('U'): // Kill line.
-      while (input.e != input.w &&
-             input.buf[(input.e - 1) % INPUT_BUF] != '\n')
-      {
-        input.current_pos--;
-        input.end_pos--;
-        input.e--;
-        consputc(BACKSPACE);
-      }
+    {
+      while (can_move_R())
+        move_R();
+      while (can_move_L())
+        handle_backspace(BACKSPACE);
       break;
+    }
     case C('H'):
     case '\x7f': // Backspace
-      if (input.e != input.w)
-      {
-        input.current_pos--;
-        input.end_pos--;
-        input.e--;
-        consputc(BACKSPACE);
-      }
+      if (can_move_L())
+        handle_backspace();
       break;
     case KEY_LF: // Left arrow
       if (can_move_L())
