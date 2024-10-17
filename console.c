@@ -207,6 +207,9 @@ struct {
   uint r;  // Read index
   uint w;  // Write index
   uint e;  // Edit index
+  uint newline_pos;
+  uint end_pos;
+  uint current_pos;
 } input;
 
 #define C(x)  ((x)-'@')  // Control-x
@@ -214,29 +217,30 @@ struct {
 
 int can_move_L()
 {
-  return 0;
+  return input.current_pos > input.newline_pos;
 }
 
 int can_move_R()
 {
-  return 0;
+  return input.current_pos < input.end_pos;
 }
 
 void move_L()
 {
-  // move curser
-  // dec pos
+  cgaputc(KEY_LF);
+  input.current_pos--;
 }
 
 void move_R()
 {
-  // move curser
-  // inc pos
+  cgaputc(KEY_RT);
+  input.current_pos++;
 }
 
 void handle_input_line()
 {
   input.w = input.e;
+  input.newline_pos = input.current_pos = input.end_pos = input.w;
   wakeup(&input.r);
 }
 
@@ -262,6 +266,8 @@ void save_char_in_buffer(int c)
 
 void show_char_in_output(int c)
 {
+  input.current_pos++;
+  input.end_pos++;
   consputc(c);
 }
 
