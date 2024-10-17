@@ -418,120 +418,6 @@ void handle_backspace()
   print_char(BACKSPACE);
   clean_host_terminal();
 }
-
-void remove_arrow_char()
-{
-  input.current_pos--;
-  input.end_pos--;
-  input.e--;
-
-  int pos = input.e + input.current_pos - input.end_pos;
-  move_buffer(pos, -1);
-
-  int len_to_end = input.end_pos - input.current_pos;
-
-  // putc(BACKSPACE, DEVICE_SCREEN);
-  // clean_with_count(len_to_end, DEVICE_SCREEN);
-  // print_buffer(input.current_pos, input.end_pos, DEVICE_SCREEN);
-  // go_to_left(len_to_end, DEVICE_SCREEN);
-
-  putc(BACKSPACE, ALL_OUTPUT);
-  clean_with_count(len_to_end, DEVICE_SCREEN);
-  print_buffer(input.current_pos, input.end_pos, ALL_OUTPUT);
-  go_to_left(len_to_end, ALL_OUTPUT);
-}
-
-int is_arrow_key(int c)
-{
-  int pos = input.e + input.current_pos - input.end_pos;
-  int c1 = input.buf[pos - 2];
-  int c2 = input.buf[pos - 1];
-  int c3 = c;
-
-  if (c1 == 0x1b && c2 == 0x5b)
-  {
-    if (c3 == 0x41)
-      return KEY_UP;
-    else if (c3 == 0x42)
-      return KEY_DN;
-    else if (c3 == 0x43)
-      return KEY_RT;
-    else if (c3 == 0x44)
-      return KEY_LF;
-  }
-
-  return -1;
-}
-
-void remove_line_in_host_terminal()
-{
-  int len_to_end = input.end_pos - input.current_pos;
-  int len = input.end_pos - input.newline_pos;
-
-  write_repeated(len_to_end, KEY_RT, HOST_TERMINAL);
-  write_repeated(len, BACKSPACE, HOST_TERMINAL);
-}
-
-void write_line_in_host_terminal()
-{
-  int len = input.end_pos - input.newline_pos;
-  print_buffer(input.newline_pos, input.end_pos, HOST_TERMINAL);
-  go_to_left(len, HOST_TERMINAL);
-}
-
-void set_cursor_in_host_terminal()
-{
-  int len = input.current_pos - input.newline_pos;
-  write_repeated(len, KEY_RT, HOST_TERMINAL);
-}
-
-void rewrite_host_terminal()
-{
-  remove_line_in_host_terminal();
-  write_line_in_host_terminal();
-  set_cursor_in_host_terminal();
-}
-
-void set_cursor_in_host_terminal_by_key(int key)
-{
-  if (key == KEY_LF)
-    putc(KEY_RT, HOST_TERMINAL);
-  else if (key == KEY_RT)
-    putc(KEY_LF, HOST_TERMINAL);
-}
-
-void insert_to_host_terminal(int c, int count)
-{
-  // int end_pos = input.end_pos;
-  // int current_pos = input.current_pos + count;
-  // int len_to_end = end_pos - current_pos;
-
-  putc(c, HOST_TERMINAL);
-  // print_buffer(current_pos, end_pos, HOST_TERMINAL);
-  // go_to_left(len_to_end, HOST_TERMINAL);
-}
-
-int handle_arrow_host_terminal(int c)
-{
-  int key = is_arrow_key(c);
-  if (key == -1)
-    return c;
-
-  handle_char_input(c);
-  set_cursor_in_host_terminal_by_key(key);
-  // insert_to_host_terminal('<', -2);
-  // insert_to_host_terminal('[', 1);
-  // insert_to_host_terminal(c, 2);
-  // putc('<', HOST_TERMINAL);
-  // putc('[', HOST_TERMINAL);
-  // putc(c, HOST_TERMINAL);
-
-  // for (int i = 0; i < 3; i++)
-  //   handle_backspace();
-
-  return key;
-}
-
 // TODO dosent handle arrow in host terminal input
 void consoleintr(int (*getc)(void))
 {
@@ -540,7 +426,6 @@ void consoleintr(int (*getc)(void))
   acquire(&cons.lock);
   while ((c = getc()) >= 0)
   {
-    c = handle_arrow_host_terminal(c);
     switch (c)
     {
     case C('P'): // Process listing.
