@@ -261,8 +261,12 @@ int is_not_empty_char(int c)
 
 void move_buffer(int pos, int count)
 {
-  for (int i = INPUT_BUF; i - count >= pos; i--)
-    input.buf[i] = input.buf[i - count];
+  if (count > 0)
+    for (int i = INPUT_BUF; i - count >= pos; i--)
+      input.buf[i] = input.buf[i - count];
+  else
+    for (int i = pos; i < INPUT_BUF; i++)
+      input.buf[i] = input.buf[i - count];
 }
 
 void handle_end_line_in_buffer()
