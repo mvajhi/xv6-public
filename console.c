@@ -187,6 +187,17 @@ struct {
 } input;
 
 #define C(x)  ((x)-'@')  // Control-x
+// Special keycodes
+#define KEY_HOME        0xE0
+#define KEY_END         0xE1
+#define KEY_UP          0xE2
+#define KEY_DN          0xE3
+#define KEY_LF          0xE4
+#define KEY_RT          0xE5
+#define KEY_PGUP        0xE6
+#define KEY_PGDN        0xE7
+#define KEY_INS         0xE8
+#define KEY_DEL         0xE9
 
 void
 consoleintr(int (*getc)(void))
@@ -211,6 +222,23 @@ consoleintr(int (*getc)(void))
       if(input.e != input.w){
         input.e--;
         consputc(BACKSPACE);
+      }
+      break;
+    case KEY_LF: // Left arrow
+      if(input.e > input.w){
+        input.e--;
+        consputc(BACKSPACE);
+        consputc(input.buf[input.e % INPUT_BUF]);
+        consputc('f');
+        consputc('u');
+        consputc('c');
+        consputc('k');
+      }
+      break;
+    case KEY_RT: // Right arrow
+      if(input.e < input.w){
+        consputc(input.buf[input.e % INPUT_BUF]);
+        input.e++;
       }
       break;
     default:
