@@ -140,7 +140,6 @@ panic(char *s)
 #define CRTPORT 0x3d4
 static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory
 
-int back_counter = 0;
 
 static void
 cgaputc(int c)
@@ -156,19 +155,13 @@ cgaputc(int c)
   if(c == '\n')
     pos += 80 - pos%80;
   else if(c == KEY_RT){
-    if (back_counter < 0){
     pos++;
-    back_counter++;
     outb(CRTPORT+1, pos);
-    }
     return;
   }
   else if(c == KEY_LF){
-    if(pos%80 - 2 > 0){
-     --pos;
-     --back_counter;
+    --pos;
     outb(CRTPORT+1, pos);
-    }
     return;
   }
   else if(c == BACKSPACE){
@@ -218,6 +211,77 @@ struct {
 
 #define C(x)  ((x)-'@')  // Control-x
 
+
+int can_move_L()
+{
+  return 0;
+}
+
+int can_move_R()
+{
+  return 0;
+}
+
+void move_L()
+{
+  // move curser
+  // dec pos
+}
+
+void move_R()
+{
+  // move curser
+  // inc pos
+}
+
+void handle_input_line()
+{
+  input.w = input.e;
+  wakeup(&input.r);
+}
+
+int is_end_of_line(int c)
+{
+  return c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF;
+}
+
+int fix_input_char(int c)
+{
+  return (c == '\r') ? '\n' : c;
+}
+
+int is_not_empty_char(int c)
+{
+  return c != 0 && input.e-input.r < INPUT_BUF;
+}
+
+void save_char_in_buffer(int c)
+{
+    input.buf[input.e++ % INPUT_BUF] = c;
+}
+
+void show_char_in_output(int c)
+{
+  consputc(c);
+}
+
+void store_char(int c)
+{
+  save_char_in_buffer(c);
+  show_char_in_output(c);
+}
+
+void handle_char_input(int c)
+{
+  if(is_not_empty_char(c)){
+    c = fix_input_char(c);
+    store_char(c);
+    if(is_end_of_line(c)){
+      handle_input_line();
+    }
+  }
+}
+
 void
 consoleintr(int (*getc)(void))
 {
@@ -244,21 +308,19 @@ consoleintr(int (*getc)(void))
       }
       break;
     case KEY_LF: // Left arrow
-      cgaputc(c);
+      if (can_move_L())
+      {
+        move_L();
+      }
       break;
     case KEY_RT: // Right arrow
-      cgaputc(c);
+      if (can_move_R())
+      {
+        move_R();
+      }
       break;
     default:
-      if(c != 0 && input.e-input.r < INPUT_BUF){
-        c = (c == '\r') ? '\n' : c;
-        input.buf[input.e++ % INPUT_BUF] = c;
-        consputc(c);
-        if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
-          input.w = input.e;
-          wakeup(&input.r);
-        }
-      }
+      handle_char_input(c);
       break;
     }
   }
