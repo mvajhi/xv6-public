@@ -246,7 +246,7 @@ void handle_input_line()
 
 int is_end_of_line(int c)
 {
-  return c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF;
+  return c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF || input.end_pos - input.newline_pos == INPUT_BUF;
 }
 
 int fix_input_char(int c)
@@ -259,9 +259,29 @@ int is_not_empty_char(int c)
   return c != 0 && input.e-input.r < INPUT_BUF;
 }
 
+void move_buffer(int pos)
+{
+  // move buffer from pos to end
+  for (int i = INPUT_BUF - 1; i > pos; i--)
+  {
+    input.buf[i] = input.buf[i - 1];
+  }
+}
+
+void handle_end_line_in_buffer()
+{
+  input.current_pos = input.end_pos;
+}
+
 void save_char_in_buffer(int c)
 {
-    input.buf[input.e++ % INPUT_BUF] = c;
+  if (c == '\n')
+    handle_end_line_in_buffer();
+    
+  int pos = input.e + (input.current_pos - input.end_pos);
+  move_buffer(pos);
+  input.buf[pos] = c;
+  input.e++;
 }
 
 void show_char_in_output(int c)
@@ -309,6 +329,8 @@ consoleintr(int (*getc)(void))
       break;
     case C('H'): case '\x7f':  // Backspace
       if(input.e != input.w){
+        input.current_pos--;
+        input.end_pos--;
         input.e--;
         consputc(BACKSPACE);
       }
