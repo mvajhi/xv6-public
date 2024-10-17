@@ -185,6 +185,27 @@ cgaputc(int c)
   crt[pos] = ' ' | 0x0700;
 }
 
+void hostputc(int c)
+{
+  if(c == BACKSPACE){
+    uartputc('\b'); uartputc(' '); uartputc('\b');
+  }
+  else if (c == KEY_LF || c == KEY_RT || c == KEY_UP || c == KEY_DN)
+  {
+    uartputc(0x1b); uartputc(0x5b);
+    if (c == KEY_LF)
+      uartputc(0x44);
+    else if (c == KEY_RT)
+      uartputc(0x43);
+    else if (c == KEY_DN)
+      uartputc(0x42);
+    else if (c == KEY_UP)
+      uartputc(0x41);
+  }
+  else
+    uartputc(c);
+}
+
 void
 consputc(int c)
 {
@@ -194,10 +215,7 @@ consputc(int c)
       ;
   }
 
-  if(c == BACKSPACE){
-    uartputc('\b'); uartputc(' '); uartputc('\b');
-  } else
-    uartputc(c);
+  hostputc(c);
   cgaputc(c);
 }
 
@@ -214,6 +232,19 @@ struct {
 
 #define C(x)  ((x)-'@')  // Control-x
 
+#define ALL_OUTPUT 0
+#define DEVICE_SCREEN 1
+#define HOST_TERMINAL 2
+
+void putc(int c, int output)
+{
+    if (output == ALL_OUTPUT)
+      consputc(c);
+    else if (output == DEVICE_SCREEN)
+      cgaputc(c);
+    else if (output == HOST_TERMINAL)
+      hostputc(c);
+}
 
 int can_move_L()
 {
@@ -227,13 +258,13 @@ int can_move_R()
 
 void move_L()
 {
-  cgaputc(KEY_LF);
+  putc(KEY_LF, ALL_OUTPUT);
   input.current_pos--;
 }
 
 void move_R()
 {
-  cgaputc(KEY_RT);
+  putc(KEY_RT, ALL_OUTPUT);
   input.current_pos++;
 }
 
@@ -285,11 +316,43 @@ void save_char_in_buffer(int c)
   input.e++;
 }
 
+void write_repeated(int count, int character, int output)
+{
+  for (int i = 0; i < count; i++)
+    putc(character, output);
+}
+
+void go_to_left(int count, int output)
+{
+  write_repeated(count, KEY_LF, output);
+}
+
+void clean_with_count(int count, int output)
+{
+  write_repeated(count, ' ', output);
+  write_repeated(count, KEY_LF, output);
+}
+
+void print_buffer(int start, int end, int output)
+{
+  for (int i = start; i < end; i++)
+  {
+    int pos = input.e + (i - input.end_pos);
+    putc(input.buf[pos], output);
+  }
+}
+
 void show_char_in_output(int c)
 {
   input.current_pos++;
   input.end_pos++;
-  consputc(c);
+
+  int len_to_end = input.end_pos - input.current_pos;
+
+  putc(c, ALL_OUTPUT);
+  clean_with_count(len_to_end, DEVICE_SCREEN);
+  print_buffer(input.current_pos, input.end_pos, ALL_OUTPUT);
+  go_to_left(len_to_end, ALL_OUTPUT);
 }
 
 void store_char(int c)
@@ -324,6 +387,8 @@ consoleintr(int (*getc)(void))
     case C('U'):  // Kill line.
       while(input.e != input.w &&
             input.buf[(input.e-1) % INPUT_BUF] != '\n'){
+        input.current_pos--;
+        input.end_pos--;
         input.e--;
         consputc(BACKSPACE);
       }
