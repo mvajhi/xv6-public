@@ -15,6 +15,18 @@
 #include "proc.h"
 #include "x86.h"
 
+// Special keycodes
+#define KEY_HOME        0xE0
+#define KEY_END         0xE1
+#define KEY_UP          0xE2
+#define KEY_DN          0xE3
+#define KEY_LF          0xE4
+#define KEY_RT          0xE5
+#define KEY_PGUP        0xE6
+#define KEY_PGDN        0xE7
+#define KEY_INS         0xE8
+#define KEY_DEL         0xE9
+
 static void consputc(int);
 
 static int panicked = 0;
@@ -128,6 +140,8 @@ panic(char *s)
 #define CRTPORT 0x3d4
 static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory
 
+int back_counter = 0;
+
 static void
 cgaputc(int c)
 {
@@ -141,6 +155,22 @@ cgaputc(int c)
 
   if(c == '\n')
     pos += 80 - pos%80;
+  else if(c == KEY_RT){
+    if (back_counter < 0){
+    pos++;
+    back_counter++;
+    outb(CRTPORT+1, pos);
+    }
+    return;
+  }
+  else if(c == KEY_LF){
+    if(pos%80 - 2 > 0){
+     --pos;
+     --back_counter;
+    outb(CRTPORT+1, pos);
+    }
+    return;
+  }
   else if(c == BACKSPACE){
     if(pos > 0) --pos;
   } else
@@ -187,17 +217,6 @@ struct {
 } input;
 
 #define C(x)  ((x)-'@')  // Control-x
-// Special keycodes
-#define KEY_HOME        0xE0
-#define KEY_END         0xE1
-#define KEY_UP          0xE2
-#define KEY_DN          0xE3
-#define KEY_LF          0xE4
-#define KEY_RT          0xE5
-#define KEY_PGUP        0xE6
-#define KEY_PGDN        0xE7
-#define KEY_INS         0xE8
-#define KEY_DEL         0xE9
 
 void
 consoleintr(int (*getc)(void))
@@ -225,21 +244,10 @@ consoleintr(int (*getc)(void))
       }
       break;
     case KEY_LF: // Left arrow
-      if(input.e > input.w){
-        input.e--;
-        consputc(BACKSPACE);
-        consputc(input.buf[input.e % INPUT_BUF]);
-        consputc('f');
-        consputc('u');
-        consputc('c');
-        consputc('k');
-      }
+      cgaputc(c);
       break;
     case KEY_RT: // Right arrow
-      if(input.e < input.w){
-        consputc(input.buf[input.e % INPUT_BUF]);
-        input.e++;
-      }
+      cgaputc(c);
       break;
     default:
       if(c != 0 && input.e-input.r < INPUT_BUF){
