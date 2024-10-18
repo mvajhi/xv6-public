@@ -232,15 +232,21 @@ void consputc(int c)
 }
 
 #define INPUT_BUF 128
+#define HISTORY_BUF 10
+
 struct
 {
   char buf[INPUT_BUF];
-  uint r; // Read index
-  uint w; // Write index
-  uint e; // Edit index
-  uint newline_pos;
-  uint end_pos;
-  uint current_pos;
+  char history[HISTORY_BUF][INPUT_BUF];
+  int incomplete_last_line;
+  int last_line_count;
+  int history_line;
+  int r; // Read index
+  int w; // Write index
+  int e; // Edit index
+  int newline_pos;
+  int end_pos;
+  int current_pos;
 } input;
 
 #define C(x) ((x) - '@') // Control-x
@@ -281,8 +287,115 @@ void move_R()
   input.current_pos++;
 }
 
+void copy_array(char dest[], char src[])
+{
+  for (int i = 0; i < INPUT_BUF; i++)
+    dest[i] = src[i];
+}
+
+void move_history()
+{
+  for (int i = HISTORY_BUF - 1; i > 0; i--)
+  {
+    copy_array(input.history[i], input.history[i - 1]);
+    //   if (i == 1)
+    //     for (int i = input.newline_pos; i < input.e - 1; i++)
+    //     {
+    //       printint(-1, 10, 1);
+    //       printint(input.buf[i], 10, 1);
+    //       printint(-2, 10, 1);
+    //       printint(i - input.newline_pos, 10, 1);
+    //       printint(-1, 10, 1);
+    //     }
+    // }
+  }
+}
+
+void store_buf_in_history()
+{
+  int start_pos = input.e - (input.end_pos - input.newline_pos);
+  int end_pos = input.e - 1;
+
+  if (input.buf[start_pos] == '\n')
+    start_pos++;
+  if (input.buf[end_pos] == '\n')
+    end_pos--;
+
+  int j = 0;
+  for (int i = input.newline_pos; i < input.e - 1; i++)
+  {
+    input.history[0][j] = input.buf[i];
+    j++;
+  }
+  input.history[0][j] = 0;
+
+  // for (int i = end_pos - start_pos; i < INPUT_BUF; i++)
+  //   input.history[0][i] = ' ';
+
+  // input.history[0][0] = '\0';
+  // int tmp = input.newline_pos;
+  // int tmp2 = input.e;
+  // for (int i = input.e; i > input.newline_pos - 1; i--)
+  // for (int i = tmp2; i > tmp; i--)
+  // for (int i = input.newline_pos; i < input.e - 1; i++)
+  // {
+  //   printint(-1, 10, 1);
+  //   printint(input.buf[i], 10, 1);
+  //   printint(-2, 10, 1);
+  //   printint(i - input.newline_pos, 10, 1);
+  //   printint(-1, 10, 1);
+  // }
+
+  // for (int i = 0; i <= j; i++)
+  // {
+  //   printint(-1, 10, 1);
+  //   printint(input.history[0][i], 10, 1);
+  //   printint(-2, 10, 1);
+  //   printint(i, 10, 1);
+  //   printint(-1, 10, 1);
+  // }
+  // printint(-3, 10, 1);
+  // printint(-3, 10, 1);
+  // for (int i = 0; i <= j; i++)
+  // {
+  //   printint(-1, 10, 1);
+  //   printint(input.history[1][i], 10, 1);
+  //   printint(-2, 10, 1);
+  //   printint(i, 10, 1);
+  //   printint(-1, 10, 1);
+  // }
+}
+
+void store_line_in_history()
+{
+  input.last_line_count++;
+  if (input.last_line_count > HISTORY_BUF)
+    input.last_line_count = HISTORY_BUF;
+
+  // printint(-1, 10, 1);
+  // printint(input.fix_bug_char_buf, 10, 1);
+  // printint(-1, 10, 1);
+  // move_history();
+  // for (int i = HISTORY_BUF - 1; i > 0; i--)
+  //   copy_array(input.history[i], input.history[i - 1]);
+  // input.history[1][0] = input.fix_bug_char_buf;
+
+  store_buf_in_history();
+  // input.fix_bug_char_buf = input.history[0][0];
+  copy_array(input.history[1], input.history[0]);
+  move_history();
+}
+
+void clean_buffer()
+{
+  for (int i = 0; i < INPUT_BUF; i++)
+    input.buf[i] = '\0';
+}
+
 void handle_input_line()
 {
+  store_line_in_history();
+
   input.w = input.e;
   input.newline_pos = input.current_pos = input.end_pos = input.w;
   wakeup(&input.r);
@@ -327,6 +440,7 @@ void save_char_in_buffer(int c)
   move_buffer(pos, 1);
   input.buf[pos] = c;
   input.e++;
+  input.incomplete_last_line = c != '\n';
 }
 
 void write_repeated(int count, int character, int output)
@@ -387,6 +501,7 @@ void handle_char_input(int c)
     store_char(c);
     if (is_end_of_line(c))
     {
+      input.history_line = 1;
       handle_input_line();
     }
   }
@@ -418,6 +533,72 @@ void handle_backspace()
   print_char(BACKSPACE);
   clean_host_terminal();
 }
+
+int can_move_U()
+{
+  // printint(input.history_line, 10, 1);
+  // printint(-1, 10, 1);
+  // printint(input.last_line_count, 10, 1);
+  return input.history_line < input.last_line_count;
+}
+
+int can_move_D()
+{
+  // TODO
+  return 1;
+  // return input.history_line > 0;
+}
+
+void print_line(char *line)
+{
+  int flag = 0;
+  for (int i = 0; i < INPUT_BUF; i++)
+  {
+    // if (line[i] == '\0')
+    // {
+    //   printint(-1, 10, 1);
+    //   printint(i, 10, 1);
+    // }
+
+    if (line[i] == '\n')
+    {
+      // printint(-2, 10, 1);
+      // printint(i, 10, 1);
+      continue;
+    }
+
+    handle_char_input(line[i]);
+    if (line[i] == '\0')
+    {
+      if (flag)
+        return;
+      flag = 1;
+    }
+  }
+}
+
+void kill_line()
+{
+  while (can_move_R())
+    move_R();
+  while (can_move_L())
+    handle_backspace();
+}
+
+void move_U()
+{
+  // putc('*', ALL_OUTPUT);
+  // TODO: store this line
+  // kill_line();
+  print_line(input.history[input.history_line]);
+  input.history_line++;
+}
+
+void move_D()
+{
+  input.history_line = 0;
+}
+
 // TODO dosent handle arrow in host terminal input
 void consoleintr(int (*getc)(void))
 {
@@ -433,13 +614,8 @@ void consoleintr(int (*getc)(void))
       doprocdump = 1;
       break;
     case C('U'): // Kill line.
-    {
-      while (can_move_R())
-        move_R();
-      while (can_move_L())
-        handle_backspace();
+      kill_line();
       break;
-    }
     case C('H'):
     case '\x7f': // Backspace
       if (can_move_L())
@@ -452,6 +628,20 @@ void consoleintr(int (*getc)(void))
     case KEY_RT: // Right arrow
       if (can_move_R())
         move_R();
+      break;
+    case KEY_UP:
+      kill_line();
+      input.history_line++;
+      print_line(input.history[input.history_line]);
+      // if (can_move_U())
+      //   move_U();
+      break;
+    case KEY_DN:
+      kill_line();
+      input.history_line--;
+      print_line(input.history[input.history_line]);
+      // if (can_move_D())
+      //   move_D();
       break;
     default:
       handle_char_input(c);
