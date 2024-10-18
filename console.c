@@ -232,7 +232,7 @@ void consputc(int c)
 }
 
 #define INPUT_BUF 128
-#define HISTORY_BUF 11 //! one more please :)
+#define HISTORY_BUF 12 //! one more please :)
 
 struct
 {
@@ -262,6 +262,12 @@ void putc(int c, int output)
     cgaputc(c);
   else if (output == HOST_TERMINAL)
     hostputc(c);
+}
+
+void write_repeated(int count, int character, int output)
+{
+  for (int i = 0; i < count; i++)
+    putc(character, output);
 }
 
 int can_move_L()
@@ -331,13 +337,72 @@ void clean_buffer()
     input.buf[i] = '\0';
 }
 
+int is_history_command()
+{
+  for (int i = 0; i < INPUT_BUF - 7; i++)
+  {
+    if (input.history[0][i] == '\0' ||
+        (input.history[0][i] != ' ' && input.history[0][i] != 'h'))
+      return 0;
+    if ((i == 0 || input.history[0][i - 1] == ' ') &&
+        input.history[0][i + 0] == 'h' &&
+        input.history[0][i + 1] == 'i' &&
+        input.history[0][i + 2] == 's' &&
+        input.history[0][i + 3] == 't' &&
+        input.history[0][i + 4] == 'o' &&
+        input.history[0][i + 5] == 'r' &&
+        input.history[0][i + 6] == 'y' &&
+        (input.history[0][i + 7] == ' ' || input.history[0][i + 7] == '\0'))
+      return 1;
+  }
+  return 0;
+}
+
+void print_str_without_buffering(char *str, int output)
+{
+  for (int i = 0; i < INPUT_BUF; i++)
+  {
+    if (str[i] == '\0')
+      return;
+    putc(str[i], output);
+  }
+}
+
+void print_row_index(int index)
+{
+  write_repeated(3, ' ', ALL_OUTPUT);
+  printint(index, 10, 0);
+  write_repeated(2, ' ', ALL_OUTPUT);
+}
+
+void handle_history_command()
+{
+  int oldest_index = input.last_line_count + 1;
+  int first_index = 3;
+  for (int i = oldest_index; i >= first_index; i--)
+  {
+    int index = oldest_index - i;
+    print_row_index(index + 1);
+    print_str_without_buffering(input.history[i], ALL_OUTPUT);
+    putc('\n', ALL_OUTPUT);
+  }
+}
+
+void execute_command()
+{
+  if (is_history_command())
+    handle_history_command();
+
+  wakeup(&input.r);
+}
+
 void handle_input_line()
 {
   store_line_in_history();
 
   input.w = input.e;
   input.newline_pos = input.current_pos = input.end_pos = input.w;
-  wakeup(&input.r);
+  execute_command();
 }
 
 int is_end_of_line(int c)
@@ -379,12 +444,6 @@ void save_char_in_buffer(int c)
   move_buffer(pos, 1);
   input.buf[pos] = c;
   input.e++;
-}
-
-void write_repeated(int count, int character, int output)
-{
-  for (int i = 0; i < count; i++)
-    putc(character, output);
 }
 
 void go_to_left(int count, int output)
