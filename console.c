@@ -232,7 +232,7 @@ void consputc(int c)
 }
 
 #define INPUT_BUF 128
-#define HISTORY_BUF 10
+#define HISTORY_BUF 11
 
 struct
 {
@@ -313,13 +313,9 @@ void move_history()
 
 void store_buf_in_history()
 {
-  int start_pos = input.e - (input.end_pos - input.newline_pos);
-  int end_pos = input.e - 1;
-
-  if (input.buf[start_pos] == '\n')
-    start_pos++;
-  if (input.buf[end_pos] == '\n')
-    end_pos--;
+  // clean hist
+  for (int i = 0; i < INPUT_BUF; i++)
+    input.history[0][i] = '\0';
 
   int j = 0;
   for (int i = input.newline_pos; i < input.e - 1; i++)
@@ -327,7 +323,7 @@ void store_buf_in_history()
     input.history[0][j] = input.buf[i];
     j++;
   }
-  input.history[0][j] = 0;
+  input.history[0][j] = '\0';
 
   // for (int i = end_pos - start_pos; i < INPUT_BUF; i++)
   //   input.history[0][i] = ' ';
