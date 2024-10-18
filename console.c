@@ -296,27 +296,11 @@ void copy_array(char dest[], char src[])
 void move_history()
 {
   for (int i = HISTORY_BUF - 1; i > 0; i--)
-  {
     copy_array(input.history[i], input.history[i - 1]);
-    //   if (i == 1)
-    //     for (int i = input.newline_pos; i < input.e - 1; i++)
-    //     {
-    //       printint(-1, 10, 1);
-    //       printint(input.buf[i], 10, 1);
-    //       printint(-2, 10, 1);
-    //       printint(i - input.newline_pos, 10, 1);
-    //       printint(-1, 10, 1);
-    //     }
-    // }
-  }
 }
 
 void store_buf_in_history()
 {
-  // clean hist
-  for (int i = 0; i < INPUT_BUF; i++)
-    input.history[0][i] = '\0';
-
   int j = 0;
   for (int i = input.newline_pos; i < input.e - 1; i++)
   {
@@ -324,60 +308,19 @@ void store_buf_in_history()
     j++;
   }
   input.history[0][j] = '\0';
-
-  // for (int i = end_pos - start_pos; i < INPUT_BUF; i++)
-  //   input.history[0][i] = ' ';
-
-  // input.history[0][0] = '\0';
-  // int tmp = input.newline_pos;
-  // int tmp2 = input.e;
-  // for (int i = input.e; i > input.newline_pos - 1; i--)
-  // for (int i = tmp2; i > tmp; i--)
-  // for (int i = input.newline_pos; i < input.e - 1; i++)
-  // {
-  //   printint(-1, 10, 1);
-  //   printint(input.buf[i], 10, 1);
-  //   printint(-2, 10, 1);
-  //   printint(i - input.newline_pos, 10, 1);
-  //   printint(-1, 10, 1);
-  // }
-
-  // for (int i = 0; i <= j; i++)
-  // {
-  //   printint(-1, 10, 1);
-  //   printint(input.history[0][i], 10, 1);
-  //   printint(-2, 10, 1);
-  //   printint(i, 10, 1);
-  //   printint(-1, 10, 1);
-  // }
-  // printint(-3, 10, 1);
-  // printint(-3, 10, 1);
-  // for (int i = 0; i <= j; i++)
-  // {
-  //   printint(-1, 10, 1);
-  //   printint(input.history[1][i], 10, 1);
-  //   printint(-2, 10, 1);
-  //   printint(i, 10, 1);
-  //   printint(-1, 10, 1);
-  // }
 }
 
-void store_line_in_history()
+void set_max_history()
 {
   input.last_line_count++;
   if (input.last_line_count > HISTORY_BUF)
     input.last_line_count = HISTORY_BUF;
+}
 
-  // printint(-1, 10, 1);
-  // printint(input.fix_bug_char_buf, 10, 1);
-  // printint(-1, 10, 1);
-  // move_history();
-  // for (int i = HISTORY_BUF - 1; i > 0; i--)
-  //   copy_array(input.history[i], input.history[i - 1]);
-  // input.history[1][0] = input.fix_bug_char_buf;
-
+void store_line_in_history()
+{
+  set_max_history();
   store_buf_in_history();
-  // input.fix_bug_char_buf = input.history[0][0];
   copy_array(input.history[1], input.history[0]);
   move_history();
 }
@@ -547,29 +490,11 @@ int can_move_D()
 
 void print_line(char *line)
 {
-  int flag = 0;
   for (int i = 0; i < INPUT_BUF; i++)
   {
-    // if (line[i] == '\0')
-    // {
-    //   printint(-1, 10, 1);
-    //   printint(i, 10, 1);
-    // }
-
-    if (line[i] == '\n')
-    {
-      // printint(-2, 10, 1);
-      // printint(i, 10, 1);
-      continue;
-    }
-
     handle_char_input(line[i]);
     if (line[i] == '\0')
-    {
-      if (flag)
         return;
-      flag = 1;
-    }
   }
 }
 
@@ -583,7 +508,6 @@ void kill_line()
 
 void move_U()
 {
-  // putc('*', ALL_OUTPUT);
   // TODO: store this line
   // kill_line();
   print_line(input.history[input.history_line]);
