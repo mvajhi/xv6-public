@@ -232,13 +232,12 @@ void consputc(int c)
 }
 
 #define INPUT_BUF 128
-#define HISTORY_BUF 11
+#define HISTORY_BUF 11 //! one more please :)
 
 struct
 {
   char buf[INPUT_BUF];
   char history[HISTORY_BUF][INPUT_BUF];
-  int incomplete_last_line;
   int last_line_count;
   int history_line;
   int r; // Read index
@@ -319,6 +318,7 @@ void set_max_history()
 
 void store_line_in_history()
 {
+  input.history_line = 1;
   set_max_history();
   store_buf_in_history();
   copy_array(input.history[1], input.history[0]);
@@ -379,7 +379,6 @@ void save_char_in_buffer(int c)
   move_buffer(pos, 1);
   input.buf[pos] = c;
   input.e++;
-  input.incomplete_last_line = c != '\n';
 }
 
 void write_repeated(int count, int character, int output)
@@ -439,10 +438,7 @@ void handle_char_input(int c)
     c = fix_input_char(c);
     store_char(c);
     if (is_end_of_line(c))
-    {
-      input.history_line = 1;
       handle_input_line();
-    }
   }
 }
 
@@ -475,17 +471,12 @@ void handle_backspace()
 
 int can_move_U()
 {
-  // printint(input.history_line, 10, 1);
-  // printint(-1, 10, 1);
-  // printint(input.last_line_count, 10, 1);
-  return input.history_line < input.last_line_count;
+  return input.history_line <= input.last_line_count;
 }
 
 int can_move_D()
 {
-  // TODO
-  return 1;
-  // return input.history_line > 0;
+  return input.history_line > 0;
 }
 
 void print_line(char *line)
@@ -494,7 +485,7 @@ void print_line(char *line)
   {
     handle_char_input(line[i]);
     if (line[i] == '\0')
-        return;
+      return;
   }
 }
 
@@ -506,20 +497,32 @@ void kill_line()
     handle_backspace();
 }
 
+void print_history_line()
+{
+  kill_line();
+  print_line(input.history[input.history_line]);
+}
+
 void move_U()
 {
-  // TODO: store this line
-  // kill_line();
-  print_line(input.history[input.history_line]);
   input.history_line++;
+  print_history_line();
 }
 
 void move_D()
 {
-  input.history_line = 0;
+  if (input.history_line <= 2)
+  {
+    input.history_line = 1;
+    kill_line();
+  }
+  else
+  {
+    input.history_line--;
+    print_history_line();
+  }
 }
 
-// TODO dosent handle arrow in host terminal input
 void consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
@@ -550,18 +553,12 @@ void consoleintr(int (*getc)(void))
         move_R();
       break;
     case KEY_UP:
-      kill_line();
-      input.history_line++;
-      print_line(input.history[input.history_line]);
-      // if (can_move_U())
-      //   move_U();
+      if (can_move_U())
+        move_U();
       break;
     case KEY_DN:
-      kill_line();
-      input.history_line--;
-      print_line(input.history[input.history_line]);
-      // if (can_move_D())
-      //   move_D();
+      if (can_move_D())
+        move_D();
       break;
     default:
       handle_char_input(c);
