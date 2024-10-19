@@ -247,6 +247,9 @@ struct
   int newline_pos;
   int end_pos;
   int current_pos;
+  int is_press_ctrl_s;
+  int index_of_ctrl_s;
+
 } input;
 
 #define C(x) ((x) - '@') // Control-x
@@ -279,12 +282,18 @@ void move_L()
 {
   putc(KEY_LF, ALL_OUTPUT);
   input.current_pos--;
+  if(input.is_press_ctrl_s && input.index_of_ctrl_s > input.current_pos){
+    input.index_of_ctrl_s = input.current_pos;
+  }
 }
 
 void move_R()
 {
   putc(KEY_RT, ALL_OUTPUT);
   input.current_pos++;
+  if(input.is_press_ctrl_s && input.index_of_ctrl_s < input.current_pos){
+    input.index_of_ctrl_s = input.current_pos;
+  }
 }
 
 void copy_array(char dest[], char src[])
@@ -465,6 +474,9 @@ void handle_backspace()
   input.current_pos--;
   input.end_pos--;
   input.e--;
+  if (input.is_press_ctrl_s && input.index_of_ctrl_s > input.current_pos  ){
+    input.index_of_ctrl_s = input.current_pos;
+  }
 
   int pos = input.e + input.current_pos - input.end_pos;
   move_buffer(pos, -1);
@@ -518,7 +530,25 @@ void move_D()
 {
   input.history_line = 0;
 }
+void handle_ctrl_s(){
+  input.index_of_ctrl_s = input.current_pos;
+  input.is_press_ctrl_s =1;
 
+}
+void handle_ctrl_f(){
+  if(input.is_press_ctrl_s){
+    int current_pos = input.current_pos;
+    char buf[INPUT_BUF];
+    for(int j = 0;j<INPUT_BUF;j++){
+      buf[j] = input.buf[j];
+    }
+    for(int i =input.index_of_ctrl_s;i < current_pos;i++){
+      handle_char_input(buf[i]);
+    }
+  }
+  input.is_press_ctrl_s =0;
+
+}
 // TODO dosent handle arrow in host terminal input
 void consoleintr(int (*getc)(void))
 {
@@ -533,10 +563,16 @@ void consoleintr(int (*getc)(void))
       // procdump() locks cons.lock indirectly; invoke later
       doprocdump = 1;
       break;
+    case C('S'):
+      handle_ctrl_s();
+      break;
+    case C('F'):
+      handle_ctrl_f();
+      break;
     case C('U'): // Kill line.
       kill_line();
       break;
-    case C('H'):
+    case C('H'): 
     case '\x7f': // Backspace
       if (can_move_L())
         handle_backspace();
