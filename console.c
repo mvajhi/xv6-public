@@ -543,7 +543,8 @@ void handle_ctrl_f(){
       buf[j] = input.buf[j];
     }
     for(int i =input.index_of_ctrl_s;i < current_pos;i++){
-      handle_char_input(buf[i]);
+      if(buf[i]<='z' && buf[i]>='a'){
+        handle_char_input(buf[i]);}
     }
   }
   input.is_press_ctrl_s =0;
