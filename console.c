@@ -771,6 +771,17 @@ int consoleread(struct inode *ip, char *dst, int n)
   return target - n;
 }
 
+void consoleinit(void)
+{
+  initlock(&cons.lock, "console");
+
+  devsw[CONSOLE].write = consolewrite;
+  devsw[CONSOLE].read = consoleread;
+  cons.locking = 1;
+
+  ioapicenable(IRQ_KBD, 0);
+}
+
 int consolewrite(struct inode *ip, char *buf, int n)
 {
   int i;
@@ -785,13 +796,3 @@ int consolewrite(struct inode *ip, char *buf, int n)
   return n;
 }
 
-void consoleinit(void)
-{
-  initlock(&cons.lock, "console");
-
-  devsw[CONSOLE].write = consolewrite;
-  devsw[CONSOLE].read = consoleread;
-  cons.locking = 1;
-
-  ioapicenable(IRQ_KBD, 0);
-}
