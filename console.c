@@ -15,6 +15,8 @@
 #include "proc.h"
 #include "x86.h"
 
+#include "making_math_simple.h"
+
 // Special keycodes
 #define KEY_HOME 0xE0
 #define KEY_END 0xE1
@@ -232,13 +234,12 @@ void consputc(int c)
 }
 
 #define INPUT_BUF 128
-#define HISTORY_BUF 11
+#define HISTORY_BUF 12 //! one more please :)
 
 struct
 {
   char buf[INPUT_BUF];
   char history[HISTORY_BUF][INPUT_BUF];
-  int incomplete_last_line;
   int last_line_count;
   int history_line;
   int r; // Read index
@@ -266,6 +267,12 @@ void putc(int c, int output)
     cgaputc(c);
   else if (output == HOST_TERMINAL)
     hostputc(c);
+}
+
+void write_repeated(int count, int character, int output)
+{
+  for (int i = 0; i < count; i++)
+    putc(character, output);
 }
 
 int can_move_L()
@@ -315,6 +322,18 @@ void store_buf_in_history()
   input.history[0][j] = '\0';
 }
 
+char *copy_buf(char *dest)
+{
+  int j = 0;
+  for (int i = input.newline_pos; i < input.e - 1; i++)
+  {
+    dest[j] = input.buf[i];
+    j++;
+  }
+  dest[j] = '\0';
+  return dest;
+}
+
 void set_max_history()
 {
   input.last_line_count++;
@@ -322,10 +341,12 @@ void set_max_history()
     input.last_line_count = HISTORY_BUF;
 }
 
-void store_line_in_history()
+void store_line_in_history(char* tmp)
 {
+  input.history_line = 1;
   set_max_history();
   store_buf_in_history();
+  copy_array(input.history[0], tmp);
   copy_array(input.history[1], input.history[0]);
   move_history();
 }
@@ -336,13 +357,116 @@ void clean_buffer()
     input.buf[i] = '\0';
 }
 
+int is_history_command()
+{
+  for (int i = 0; i < INPUT_BUF - 7; i++)
+  {
+    if (input.history[0][i] == '\0' ||
+        (input.history[0][i] != ' ' && input.history[0][i] != 'h'))
+      return 0;
+    if ((i == 0 || input.history[0][i - 1] == ' ') &&
+        input.history[0][i + 0] == 'h' &&
+        input.history[0][i + 1] == 'i' &&
+        input.history[0][i + 2] == 's' &&
+        input.history[0][i + 3] == 't' &&
+        input.history[0][i + 4] == 'o' &&
+        input.history[0][i + 5] == 'r' &&
+        input.history[0][i + 6] == 'y' &&
+        (input.history[0][i + 7] == ' ' || input.history[0][i + 7] == '\0'))
+      return 1;
+  }
+  return 0;
+}
+
+void print_str_without_buffering(char *str, int output)
+{
+  for (int i = 0; i < INPUT_BUF; i++)
+  {
+    if (str[i] == '\0')
+      return;
+    putc(str[i], output);
+  }
+}
+
+void print_row_index(int index)
+{
+  write_repeated(3, ' ', ALL_OUTPUT);
+  printint(index, 10, 0);
+  write_repeated(2, ' ', ALL_OUTPUT);
+}
+
+void handle_history_command()
+{
+  int oldest_index = input.last_line_count + 1;
+  int first_index = 3;
+  for (int i = oldest_index; i >= first_index; i--)
+  {
+    int index = oldest_index - i;
+    print_row_index(index + 1);
+    print_str_without_buffering(input.history[i], ALL_OUTPUT);
+    putc('\n', ALL_OUTPUT);
+  }
+}
+
+void execute_command()
+{
+  if (is_history_command())
+    handle_history_command();
+
+  wakeup(&input.r);
+}
+
+void move_buffer(int pos, int count)
+{
+  if (count > 0)
+    for (int i = INPUT_BUF; i - count >= pos; i--)
+      input.buf[i] = input.buf[i - count];
+  else
+    for (int i = pos; i < INPUT_BUF; i++)
+      input.buf[i] = input.buf[i - count];
+}
+
+
+void replace_buf(char *str)
+{
+  int flag = 0;
+  int j = 0;
+  for (int i = input.newline_pos; i < input.e - 1; i++)
+  {
+    if (flag)
+    {
+      input.buf[i] = ' ';
+    }
+    else if (str[j] == '\0' || str[j] == '\n')
+    {
+      flag = 1;
+      input.buf[i] = '\0';
+    }
+    else
+    {
+      input.buf[i] = str[j];
+      j++;
+    }
+  }
+}
+
+void simple_math_expression(char *tmp)
+{
+  copy_buf(tmp);
+  making_math_simple(tmp);
+  replace_buf(tmp);
+}
+
 void handle_input_line()
 {
-  store_line_in_history();
+  char tmp[INPUT_BUF];
+  simple_math_expression(tmp);
+
+  store_line_in_history(tmp);
 
   input.w = input.e;
   input.newline_pos = input.current_pos = input.end_pos = input.w;
-  wakeup(&input.r);
+  execute_command();
 }
 
 int is_end_of_line(int c)
@@ -360,16 +484,6 @@ int is_not_empty_char(int c)
   return c != 0 && input.e - input.r < INPUT_BUF;
 }
 
-void move_buffer(int pos, int count)
-{
-  if (count > 0)
-    for (int i = INPUT_BUF; i - count >= pos; i--)
-      input.buf[i] = input.buf[i - count];
-  else
-    for (int i = pos; i < INPUT_BUF; i++)
-      input.buf[i] = input.buf[i - count];
-}
-
 void handle_end_line_in_buffer()
 {
   input.current_pos = input.end_pos;
@@ -384,13 +498,6 @@ void save_char_in_buffer(int c)
   move_buffer(pos, 1);
   input.buf[pos] = c;
   input.e++;
-  input.incomplete_last_line = c != '\n';
-}
-
-void write_repeated(int count, int character, int output)
-{
-  for (int i = 0; i < count; i++)
-    putc(character, output);
 }
 
 void go_to_left(int count, int output)
@@ -448,10 +555,7 @@ void handle_char_input(int c)
     c = fix_input_char(c);
     store_char(c);
     if (is_end_of_line(c))
-    {
-      input.history_line = 1;
       handle_input_line();
-    }
   }
 }
 
@@ -489,17 +593,12 @@ void handle_backspace()
 
 int can_move_U()
 {
-  // printint(input.history_line, 10, 1);
-  // printint(-1, 10, 1);
-  // printint(input.last_line_count, 10, 1);
-  return input.history_line < input.last_line_count;
+  return input.history_line <= input.last_line_count;
 }
 
 int can_move_D()
 {
-  // TODO
-  return 1;
-  // return input.history_line > 0;
+  return input.history_line > 0;
 }
 
 void print_line(char *line)
@@ -508,7 +607,7 @@ void print_line(char *line)
   {
     handle_char_input(line[i]);
     if (line[i] == '\0')
-        return;
+      return;
   }
 }
 
@@ -520,17 +619,30 @@ void kill_line()
     handle_backspace();
 }
 
+void print_history_line()
+{
+  kill_line();
+  print_line(input.history[input.history_line]);
+}
+
 void move_U()
 {
-  // TODO: store this line
-  // kill_line();
-  print_line(input.history[input.history_line]);
   input.history_line++;
+  print_history_line();
 }
 
 void move_D()
 {
-  input.history_line = 0;
+  if (input.history_line <= 2)
+  {
+    input.history_line = 1;
+    kill_line();
+  }
+  else
+  {
+    input.history_line--;
+    print_history_line();
+  }
 }
 void handle_ctrl_s(){
   input.index_of_ctrl_s = input.current_pos;
@@ -598,18 +710,12 @@ void consoleintr(int (*getc)(void))
         move_R();
       break;
     case KEY_UP:
-      kill_line();
-      input.history_line++;
-      print_line(input.history[input.history_line]);
-      // if (can_move_U())
-      //   move_U();
+      if (can_move_U())
+        move_U();
       break;
     case KEY_DN:
-      kill_line();
-      input.history_line--;
-      print_line(input.history[input.history_line]);
-      // if (can_move_D())
-      //   move_D();
+      if (can_move_D())
+        move_D();
       break;
     default:
       handle_char_input(c);
