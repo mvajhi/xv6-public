@@ -282,18 +282,14 @@ void move_L()
 {
   putc(KEY_LF, ALL_OUTPUT);
   input.current_pos--;
-  if(input.is_press_ctrl_s && input.index_of_ctrl_s > input.current_pos){
-    input.index_of_ctrl_s = input.current_pos;
-  }
+  
 }
 
 void move_R()
 {
   putc(KEY_RT, ALL_OUTPUT);
   input.current_pos++;
-  if(input.is_press_ctrl_s && input.index_of_ctrl_s < input.current_pos){
-    input.index_of_ctrl_s = input.current_pos;
-  }
+  
 }
 
 void copy_array(char dest[], char src[])
@@ -429,8 +425,12 @@ void print_char(int c)
 
 void show_char_in_output(int c)
 {
+  
   input.current_pos++;
   input.end_pos++;
+  if(input.is_press_ctrl_s && input.index_of_ctrl_s > input.current_pos){
+    input.index_of_ctrl_s++;
+  }
 
   print_char(c);
 }
@@ -471,12 +471,14 @@ void clean_host_terminal()
 
 void handle_backspace()
 {
+  
   input.current_pos--;
   input.end_pos--;
   input.e--;
-  if (input.is_press_ctrl_s && input.index_of_ctrl_s > input.current_pos  ){
-    input.index_of_ctrl_s = input.current_pos;
+  if(input.is_press_ctrl_s && input.index_of_ctrl_s > input.current_pos){
+    input.index_of_ctrl_s--;
   }
+  
 
   int pos = input.e + input.current_pos - input.end_pos;
   move_buffer(pos, -1);
@@ -542,12 +544,21 @@ void handle_ctrl_f(){
     for(int j = 0;j<INPUT_BUF;j++){
       buf[j] = input.buf[j];
     }
+    if(current_pos >input.index_of_ctrl_s){
     for(int i =input.index_of_ctrl_s;i < current_pos;i++){
       if(buf[i]<='z' && buf[i]>='a'){
         handle_char_input(buf[i]);}
+    }}
+    else{
+      for(int i =current_pos;i < input.index_of_ctrl_s;i++){
+      if(buf[i]<='z' && buf[i]>='a'){
+        handle_char_input(buf[i]);}
     }
+
+    }
+    input.is_press_ctrl_s =0;
   }
-  input.is_press_ctrl_s =0;
+  
 
 }
 // TODO dosent handle arrow in host terminal input
