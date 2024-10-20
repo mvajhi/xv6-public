@@ -1,5 +1,6 @@
+#include "making_math_simple.h"
 
-#define MAX_RESULT_SIZE 32
+#define MAX_RESULT_SIZE 128
 
 // Function to convert string to double
 double my_atof(const char *str) {
@@ -152,15 +153,20 @@ void replace_math_expressions(char *str) {
     }
 }
 
-int main() {
-    char str[] = "1vv0+20=?vv 5.5*2=? 10.5/2=? 1.5-0.5=?";
+// int main() {
+//     char str[] = "1vv0+20=?vv 5.5*2=? 10.5/2=? 1.5-0.5=? ";
+//     replace_math_expressions(str);
+//     for (int i = 0; i < MAX_RESULT_SIZE; i++) {
+//         if (str[i] == '\0') {
+//             break;
+//         }
+//         printf(1, "%c", str[i]);
+//     }
+//     printf(1, "\n");
+//     exit();
+// }
+
+char* making_math_simple(char* str) {
     replace_math_expressions(str);
-    for (int i = 0; i < MAX_RESULT_SIZE; i++) {
-        if (str[i] == '\0') {
-            break;
-        }
-        printf(1, "%c", str[i]);
-    }
-    printf(1, "\n");
-    exit();
+    return str;
 }

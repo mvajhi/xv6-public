@@ -15,6 +15,8 @@
 #include "proc.h"
 #include "x86.h"
 
+#include "making_math_simple.h"
+
 // Special keycodes
 #define KEY_HOME 0xE0
 #define KEY_END 0xE1
@@ -315,6 +317,18 @@ void store_buf_in_history()
   input.history[0][j] = '\0';
 }
 
+char *copy_buf(char *dest)
+{
+  int j = 0;
+  for (int i = input.newline_pos; i < input.e - 1; i++)
+  {
+    dest[j] = input.buf[i];
+    j++;
+  }
+  dest[j] = '\0';
+  return dest;
+}
+
 void set_max_history()
 {
   input.last_line_count++;
@@ -322,11 +336,12 @@ void set_max_history()
     input.last_line_count = HISTORY_BUF;
 }
 
-void store_line_in_history()
+void store_line_in_history(char* tmp)
 {
   input.history_line = 1;
   set_max_history();
   store_buf_in_history();
+  copy_array(input.history[0], tmp);
   copy_array(input.history[1], input.history[0]);
   move_history();
 }
@@ -396,9 +411,53 @@ void execute_command()
   wakeup(&input.r);
 }
 
+void move_buffer(int pos, int count)
+{
+  if (count > 0)
+    for (int i = INPUT_BUF; i - count >= pos; i--)
+      input.buf[i] = input.buf[i - count];
+  else
+    for (int i = pos; i < INPUT_BUF; i++)
+      input.buf[i] = input.buf[i - count];
+}
+
+
+void replace_buf(char *str)
+{
+  int flag = 0;
+  int j = 0;
+  for (int i = input.newline_pos; i < input.e - 1; i++)
+  {
+    if (flag)
+    {
+      input.buf[i] = ' ';
+    }
+    else if (str[j] == '\0' || str[j] == '\n')
+    {
+      flag = 1;
+      input.buf[i] = '\0';
+    }
+    else
+    {
+      input.buf[i] = str[j];
+      j++;
+    }
+  }
+}
+
+void simple_math_expression(char *tmp)
+{
+  copy_buf(tmp);
+  making_math_simple(tmp);
+  replace_buf(tmp);
+}
+
 void handle_input_line()
 {
-  store_line_in_history();
+  char tmp[INPUT_BUF];
+  simple_math_expression(tmp);
+
+  store_line_in_history(tmp);
 
   input.w = input.e;
   input.newline_pos = input.current_pos = input.end_pos = input.w;
@@ -418,16 +477,6 @@ int fix_input_char(int c)
 int is_not_empty_char(int c)
 {
   return c != 0 && input.e - input.r < INPUT_BUF;
-}
-
-void move_buffer(int pos, int count)
-{
-  if (count > 0)
-    for (int i = INPUT_BUF; i - count >= pos; i--)
-      input.buf[i] = input.buf[i - count];
-  else
-    for (int i = pos; i < INPUT_BUF; i++)
-      input.buf[i] = input.buf[i - count];
 }
 
 void handle_end_line_in_buffer()
