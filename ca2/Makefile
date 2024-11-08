@@ -71,7 +71,7 @@ QEMU = $(shell if which qemu > /dev/null; \
 	echo "***" 1>&2; exit 1)
 endif
 
-CC = $(TOOLPREFIX)gcc
+CC = $(TOOLPREFIX)gcc-9
 AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
@@ -181,7 +181,11 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
+<<<<<<< HEAD
 	_move_test\
+=======
+	_get\
+>>>>>>> b1525bcd7c9ce0006f3cfd28981bce7f5064b558
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -249,7 +253,11 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 # check in that version.
 
 EXTRA=\
+<<<<<<< HEAD
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c move_test.c\
+=======
+	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c get.c\
+>>>>>>> b1525bcd7c9ce0006f3cfd28981bce7f5064b558
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
 	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
