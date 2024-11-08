@@ -442,6 +442,103 @@ sys_pipe(void)
   fd[1] = fd1;
   return 0;
 }
-int sys_move_file(void){
-  
+int sys_move_file(void) {
+  char *oldpath, *newpath;
+  char name[DIRSIZ];
+  struct inode *ip, *dp,*np;
+  uint off;
+
+
+  if (argstr(0, &oldpath) < 0 || argstr(1, &newpath) < 0)
+    return -1;
+
+  begin_op();
+ 
+  if ((ip = namei(oldpath)) == 0) {
+    end_op();
+    return -1;
+  }
+
+  ilock(ip);
+
+
+  if (ip->type != T_FILE) {
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+
+
+  ip->nlink++;
+  iupdate(ip);
+  iunlock(ip);
+
+
+  if ((dp = nameiparent(oldpath, name)) == 0) {
+    goto bad;
+  }
+
+  ilock(dp);
+
+
+  if (dirlookup(dp, name, &off) == 0) {
+    iunlockput(dp);
+    goto bad;
+  }
+  struct dirent de;
+  memset(&de, 0, sizeof(de));
+  if(writei(dp, (char*)&de, off, sizeof(de)) != sizeof(de))
+    panic("unlink: writei");
+  if(ip->type == T_DIR){
+    dp->nlink--;
+    iupdate(dp);
+  }
+  dp->nlink--;
+
+  iunlock(dp);
+
+
+  if ((np = namei(newpath)) == 0) {
+    goto bad;
+  }
+
+  ilock(np);
+  if (np->type != T_DIR) {
+    iunlockput(np);
+    end_op();
+    return -1;
+  }
+
+ 
+  if (dirlookup(np, name, &off) != 0) {
+    iunlockput(np);
+    goto bad;
+  }
+
+  if (dirlink(np, name, ip->inum) < 0) {
+    iunlockput(np);
+    goto bad;
+  }
+
+  iunlockput(np);
+
+
+  ilock(ip);
+  ip->nlink--; 
+  iupdate(ip);
+  iunlockput(ip);
+
+  end_op();
+  return 0;
+
+bad:
+  // In case of failure, restore link count and clean up
+  if (ip) {
+    ilock(ip);
+    ip->nlink--;  // Revert link count
+    iupdate(ip);
+    iunlockput(ip);
+  }
+  end_op();
+  return -1;
 }
