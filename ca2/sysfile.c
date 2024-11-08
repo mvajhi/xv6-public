@@ -443,5 +443,5 @@ sys_pipe(void)
   return 0;
 }
 int sys_move_file(void){
-  
+  return 0;
 }
