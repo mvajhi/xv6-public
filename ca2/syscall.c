@@ -104,7 +104,7 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_move_file(void);
-
+extern int sys_sort_syscalls(void);
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
@@ -128,6 +128,7 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_move_file] sys_move_file,
+[SYS_sort_syscalls] sys_sort_syscalls
 };
 
 void
@@ -137,6 +138,10 @@ syscall(void)
   struct proc *curproc = myproc();
 
   num = curproc->tf->eax;
+  if (num > 0 && num < NUM_SYSCALLS) {
+    curproc->syscall_count[num-1]++;  
+}
+
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     curproc->tf->eax = syscalls[num]();
   } else {

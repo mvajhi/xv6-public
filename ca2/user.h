@@ -24,6 +24,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int move_file(char*,char*);
+int sort_syscalls(int);
 
 // ulib.c
 int stat(const char*, struct stat*);

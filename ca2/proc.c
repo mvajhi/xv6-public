@@ -111,7 +111,9 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-
+  for(int i =0;i<NUM_SYSCALLS;i++){
+    p->syscall_count[i]=0;
+  }
   return p;
 }
 
@@ -532,3 +534,34 @@ procdump(void)
     cprintf("\n");
   }
 }
+int sort_syscalls(int pid){
+  struct proc *p;
+  int i;
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid == pid){  
+    int syscall_data[NUM_SYSCALLS];
+
+    // Initialize the array with system call numbers and their counts
+    for (i = 0; i < NUM_SYSCALLS; i++) {
+        
+        syscall_data[i] = p->syscall_count[i];
+    }
+
+    
+
+    // Print the sorted system calls
+    for (i = 0; i < NUM_SYSCALLS-1; i++) {
+        
+            cprintf("Syscall %d: %d times\n", i+1, syscall_data[i]);
+        
+    }
+    release(&ptable.lock);
+    return 0;
+}
+
+      }
+  release(&ptable.lock);
+  return -1;
+}
+
