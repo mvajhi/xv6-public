@@ -542,7 +542,7 @@ int sort_syscalls(int pid){
     if(p->pid == pid){  
     int syscall_data[NUM_SYSCALLS];
 
-    // Initialize the array with system call numbers and their counts
+
     for (i = 0; i < NUM_SYSCALLS; i++) {
         
         syscall_data[i] = p->syscall_count[i];
@@ -550,7 +550,6 @@ int sort_syscalls(int pid){
 
     
 
-    // Print the sorted system calls
     for (i = 0; i < NUM_SYSCALLS-1; i++) {
         
             cprintf("Syscall %d: %d times\n", i+1, syscall_data[i]);

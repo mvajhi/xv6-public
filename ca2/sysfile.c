@@ -532,10 +532,10 @@ int sys_move_file(void) {
   return 0;
 
 bad:
-  // In case of failure, restore link count and clean up
+
   if (ip) {
     ilock(ip);
-    ip->nlink--;  // Revert link count
+    ip->nlink--; 
     iupdate(ip);
     iunlockput(ip);
   }
