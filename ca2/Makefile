@@ -183,6 +183,7 @@ UPROGS=\
 	_zombie\
 	_move_test\
 	_sort_test\
+	_syscalltest\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)

@@ -1,5 +1,5 @@
 // Per-CPU state
-#define NUM_SYSCALLS 24
+#define NUM_SYSCALLS 27
 struct cpu {
   uchar apicid;                // Local APIC ID
   struct context *scheduler;   // swtch() here to enter scheduler
@@ -53,7 +53,8 @@ struct proc {
   int syscall_count[NUM_SYSCALLS];
 };
 int sort_syscalls(int pid);
-
+int get_most_invoked_syscall_impl(int pid);
+int list_all_processes_impl(void);
 // Process memory is laid out contiguously, low addresses first:
 //   text
 //   original data and bss

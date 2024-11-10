@@ -96,3 +96,19 @@ int sys_sort_syscalls(void){
     return sort_syscalls(pid);
 }
 
+
+int
+sys_get_most_invoked_syscall(void)
+{
+  int pid;
+  if(argint(0, &pid) < 0)
+    return -1;
+  return get_most_invoked_syscall_impl(pid);
+}
+
+int
+sys_list_all_processes(void)
+{
+  return list_all_processes_impl();
+}
+

@@ -25,6 +25,9 @@ int sleep(int);
 int uptime(void);
 int move_file(char*,char*);
 int sort_syscalls(int);
+int get_most_invoked_syscall(int pid);
+int list_all_processes(void);
+
 
 // ulib.c
 int stat(const char*, struct stat*);
