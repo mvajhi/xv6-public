@@ -97,6 +97,9 @@ found:
   p->burst_time = 2;
   p->confidence = 50;
   p->enter_time = ticks;
+  p->queue_number = FIFO;
+  if (p->pid <= 2)
+    p->queue_number = RR;
   cprintf("Burst time: %d\n", p->burst_time);
 
   release(&ptable.lock);
