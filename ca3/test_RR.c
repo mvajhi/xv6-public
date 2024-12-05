@@ -8,15 +8,18 @@ int main(int argc,char* argv[]){
         return 1;
     }
     if(pid == 0){
-        for (int i=0;i<1000000;i++){
+        for (int i=0;i<1000;i++){
             printf(1,"%d for child\n",i);
         }
+        exit();
     }
     else
     {
-        for (int i=0;i<1000000;i++){
+        for (int i=0;i<1000;i++){
             printf(1,"%d for parent\n",i);
-        }        
+        }    
+        wait();
+        exit();    
     }
     return 0;
 }
