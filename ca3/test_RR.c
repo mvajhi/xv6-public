@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
         }
         exit();
     }
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 300; i++)
     {
         printf(1, "%d for parent\n", i);
     }

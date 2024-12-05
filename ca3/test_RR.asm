@@ -51,30 +51,30 @@ int main(int argc, char *argv[])
         }
         exit();
     }
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 300; i++)
   2e:	31 db                	xor    %ebx,%ebx
     {
         printf(1, "%d for parent\n", i);
   30:	83 ec 04             	sub    $0x4,%esp
   33:	53                   	push   %ebx
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 300; i++)
   34:	83 c3 01             	add    $0x1,%ebx
         printf(1, "%d for parent\n", i);
   37:	68 f6 07 00 00       	push   $0x7f6
   3c:	6a 01                	push   $0x1
   3e:	e8 2d 04 00 00       	call   470 <printf>
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 300; i++)
   43:	83 c4 10             	add    $0x10,%esp
-  46:	83 fb 0a             	cmp    $0xa,%ebx
-  49:	75 e5                	jne    30 <main+0x30>
+  46:	81 fb 2c 01 00 00    	cmp    $0x12c,%ebx
+  4c:	75 e2                	jne    30 <main+0x30>
     }
     wait();
-  4b:	e8 cb 02 00 00       	call   31b <wait>
+  4e:	e8 c8 02 00 00       	call   31b <wait>
     wait();
-  50:	e8 c6 02 00 00       	call   31b <wait>
+  53:	e8 c3 02 00 00       	call   31b <wait>
     exit();
-  55:	e8 b9 02 00 00       	call   313 <exit>
-  5a:	8d b6 00 00 00 00    	lea    0x0(%esi),%esi
+  58:	e8 b6 02 00 00       	call   313 <exit>
+  5d:	8d 76 00             	lea    0x0(%esi),%esi
             printf(1, "%d for child2\n", i);
   60:	83 ec 04             	sub    $0x4,%esp
   63:	53                   	push   %ebx
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
   73:	83 c4 10             	add    $0x10,%esp
   76:	83 fb 0a             	cmp    $0xa,%ebx
   79:	75 e5                	jne    60 <main+0x60>
-  7b:	eb d8                	jmp    55 <main+0x55>
+  7b:	eb db                	jmp    58 <main+0x58>
 
     return 0;
   7d:	8d 65 f8             	lea    -0x8(%ebp),%esp
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
   a3:	83 c0 01             	add    $0x1,%eax
   a6:	83 f8 0a             	cmp    $0xa,%eax
   a9:	75 e1                	jne    8c <main+0x8c>
-  ab:	eb a8                	jmp    55 <main+0x55>
+  ab:	eb ab                	jmp    58 <main+0x58>
   ad:	66 90                	xchg   %ax,%ax
   af:	90                   	nop
 

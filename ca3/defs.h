@@ -120,6 +120,8 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+void            update_age(void);
+void            update_queue_number(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

@@ -7,6 +7,10 @@
 #include "proc.h"
 #include "spinlock.h"
 
+const int FIFO = 0;
+const int SJF = 1;
+const int RR = 2;
+
 struct
 {
   struct spinlock lock;
@@ -92,6 +96,7 @@ found:
   p->pid = nextpid++;
   p->burst_time = 2;
   p->confidence = 50;
+  p->enter_time = ticks;
   cprintf("Burst time: %d\n", p->burst_time);
 
   release(&ptable.lock);
@@ -582,4 +587,34 @@ void procdump(void)
     }
     cprintf("\n");
   }
+}
+
+void
+update_age(void)
+{
+  struct proc *p;
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if(p->state == SLEEPING || p->state == RUNNING || p->pid < 3)
+      continue;
+    p->age++;
+  }
+  release(&ptable.lock);
+}
+
+void
+update_queue_number(void)
+{
+  acquire(&ptable.lock);
+  for (struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->queue_number == RR || p->age < 80 || p->pid < 3)
+      continue;
+    p->queue_number++;
+    p->age = 0;
+    p->enter_time = ticks;
+    cprintf("Process %d moved to queue %d\n", p->pid, p->queue_number);
+  }
+  release(&ptable.lock);
 }
