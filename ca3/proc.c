@@ -363,6 +363,52 @@ void sort_processes(void)
   }
 }
 
+void
+handle_change_queue(void)
+{
+  struct proc *p;
+
+  int queue = RR;
+  if (mycpu()->RR > 0)
+    queue = RR;
+  else if (mycpu()->SJF > 0)
+    queue = SJF;
+  else if (mycpu()->FCFS > 0)
+    queue = FIFO;
+
+  int is_empty = 1;
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state != RUNNABLE)
+      continue;
+    if (p->queue_number != queue)
+      continue;
+    is_empty = 0;
+  }
+  
+  if (is_empty)
+  {
+    if (queue == RR)
+    {
+      mycpu()->RR = 0;
+      mycpu()->SJF = 2;
+      mycpu()->FCFS = 0;
+    }
+    else if (queue == SJF)
+    {
+      mycpu()->RR = 0;
+      mycpu()->SJF = 0;
+      mycpu()->FCFS = 1;
+    }
+    else if (queue == FIFO)
+    {
+      mycpu()->RR = 3;
+      mycpu()->SJF = 0;
+      mycpu()->FCFS = 0;
+    }
+  }
+}
+
 // PAGEBREAK: 42
 //  Per-CPU process scheduler.
 //  Each CPU calls scheduler() after setting itself up.
@@ -384,6 +430,7 @@ void scheduler(void)
     
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    handle_change_queue();
     sort_processes();
 
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -614,12 +661,26 @@ update_queue_number(void)
   acquire(&ptable.lock);
   for (struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if (p->queue_number == RR || p->age < 80 || p->pid < 3)
+    if (p->queue_number == RR || p->age < 10 || p->pid < 3)
       continue;
     p->queue_number++;
     p->age = 0;
     p->enter_time = ticks;
     cprintf("Process %d moved to queue %d\n", p->pid, p->queue_number);
+  }
+  release(&ptable.lock);
+}
+
+void
+update_ticks(void)
+{
+  acquire(&ptable.lock);
+  for (struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state != RUNNABLE || p->pid < 3)
+      continue;
+    p->burst_time--;
+    cprintf("Burst time for %d: %d\n", p->pid, p->burst_time);
   }
   release(&ptable.lock);
 }
