@@ -88,6 +88,8 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->burst_time = 2;
+  p->confidence = 50;
 
   release(&ptable.lock);
 
@@ -334,6 +336,12 @@ scheduler(void)
     acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
+        continue;
+      
+      int random = ticks * (p->pid + 1) + ((int)p->name[0] + 1) * 357 + 666;
+      random = (random % 100);
+      cprintf("Random number: %d for pid: %d\n", random, p->pid);
+      if (random > p->confidence)
         continue;
 
       // Switch to chosen process.  It is the process's job
