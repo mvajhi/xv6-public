@@ -2,24 +2,41 @@
 #include "stat.h"
 #include "user.h"
 #include "fs.h"
-int main(int argc,char* argv[]){
+int main(int argc, char *argv[])
+{
     int pid = fork();
-    if(pid < 0){
+    if (pid < 0)
+    {
         return 1;
     }
-    if(pid == 0){
-        for (int i=0;i<1000;i++){
-            printf(1,"%d for child\n",i);
+    if (pid == 0)
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            printf(1, "%d for child1\n", i);
         }
         exit();
     }
-    else
+    pid = fork();
+    if (pid < 0)
     {
-        for (int i=0;i<1000;i++){
-            printf(1,"%d for parent\n",i);
-        }    
-        wait();
-        exit();    
+        return 1;
     }
+    if (pid == 0)
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            printf(1, "%d for child2\n", i);
+        }
+        exit();
+    }
+    for (int i = 0; i < 10; i++)
+    {
+        printf(1, "%d for parent\n", i);
+    }
+    wait();
+    wait();
+    exit();
+
     return 0;
 }
