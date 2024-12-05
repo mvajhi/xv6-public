@@ -336,12 +336,12 @@ void sort_processes(void)
   struct proc *arg_min;
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if (p->state == SLEEPING)
+    if (p->state !=RUNNABLE )
       continue;
     arg_min = p;
     for (struct proc *i = p + 1; i < &ptable.proc[NPROC]; i++)
     {
-      if (i->state == SLEEPING)
+      if (p->state !=RUNNABLE )
         continue;
       if (arg_min->burst_time > i->burst_time && arg_min->pid != i->pid)
       {
@@ -378,21 +378,23 @@ void scheduler(void)
   {
     // Enable interrupts on this processor.
     sti();
-
+    
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     sort_processes();
 
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
-      if (p->state != RUNNABLE)
+      if (p->state != RUNNABLE )
         continue;
 
       int random = ticks * (p->pid + 1) + ((int)p->name[0] + 1) * 357 + 666;
       random = ((random * random) % 100);
+      
       // cprintf("Random number: %d for pid: %d\n", random, p->pid);
       if (random > p->confidence)
         continue;
+      //cprintf("Random number: %d for pid: %d\n", random, p->pid);
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -596,7 +598,7 @@ update_age(void)
   acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if(p->state == SLEEPING || p->state == RUNNING || p->pid < 3)
+    if(p->state != RUNNABLE || p->pid < 3)
       continue;
     p->age++;
   }
