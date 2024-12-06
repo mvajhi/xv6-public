@@ -109,7 +109,8 @@ trap(struct trapframe *tf)
     if(myproc() && myproc()->state == RUNNING &&
        tf->trapno == T_IRQ0+IRQ_TIMER)
        {
-          if (ticks % 10 == 0)
+          int time = ticks;
+          if (time % 10 == 0)
           {
             if (mycpu()->RR > 0)
             {
@@ -127,6 +128,7 @@ trap(struct trapframe *tf)
               if (mycpu()->SJF == 0)
               {
                 mycpu()->FCFS = 1;
+                cprintf("SJF_EXPIRED\n");
                 yield();
               }
             }
@@ -136,6 +138,7 @@ trap(struct trapframe *tf)
               if (mycpu()->FCFS == 0)
               {
                 mycpu()->RR = 3;
+                cprintf("FCFS EXPIRED\n");
                 yield();
               }
             }
