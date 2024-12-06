@@ -476,6 +476,7 @@ SJF_scheduler(void)
 void
 FCFS_scheduler(void)
 {
+  // test
     struct proc *p;
     struct cpu *c = mycpu();
     c->proc = 0;
