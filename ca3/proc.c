@@ -339,12 +339,12 @@ void sort_processes(void)
   struct proc *arg_min;
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if (p->state !=RUNNABLE )
+    if (p->state !=RUNNABLE || p->queue_number!= SJF )
       continue;
     arg_min = p;
     for (struct proc *i = p + 1; i < &ptable.proc[NPROC]; i++)
     {
-      if (p->state !=RUNNABLE )
+      if (i->state !=RUNNABLE || i->queue_number!=SJF)
         continue;
       if (arg_min->burst_time > i->burst_time && arg_min->pid != i->pid)
       {
@@ -415,7 +415,6 @@ void
 RR_scheduler(void)
 {
   // TODO restore RR_proc
-    cprintf("RR_scheduler\n");
     struct proc *p;
     struct cpu *c = mycpu();
     c->proc = 0;
@@ -440,7 +439,6 @@ RR_scheduler(void)
 void
 SJF_scheduler(void)
 {
-    cprintf("SJF_scheduler\n");
     struct proc *p;
     struct cpu *c = mycpu();
     c->proc = 0;
@@ -476,7 +474,6 @@ SJF_scheduler(void)
 void
 FCFS_scheduler(void)
 {
-    cprintf("FCFS_scheduler\n");
     struct proc *p;
     struct cpu *c = mycpu();
     c->proc = 0;
@@ -533,8 +530,11 @@ void scheduler(void)
       RR_scheduler();
     else if (mycpu()->SJF > 0)
       SJF_scheduler();
+      // RR_scheduler();
     else if (mycpu()->FCFS > 0)
-      FCFS_scheduler();
+      SJF_scheduler();
+
+
     else
       panic("No queue selected");
 
