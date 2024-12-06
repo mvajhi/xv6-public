@@ -432,7 +432,8 @@ RR_scheduler(void)
       p->age=0;
       swtch(&(c->scheduler), p->context);
       switchkvm();
-
+      mycpu()->RR_proc = p+1;
+      
       c->proc = 0;
       return;
     }

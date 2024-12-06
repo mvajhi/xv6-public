@@ -118,7 +118,6 @@ trap(struct trapframe *tf)
               mycpu()->RR--;
               if (mycpu()->RR == 0)
               {
-                mycpu()->RR_proc = myproc();
                 mycpu()->SJF = 2;
                 yield();
               }
