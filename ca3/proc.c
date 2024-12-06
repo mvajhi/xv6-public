@@ -392,15 +392,13 @@ handle_change_queue(void)
   
   if (is_empty)
   {
-    int time = 10 - ticks%10;
-
-    
+    mycpu()->ticks = 0;
     if (queue == RR)
     {
       mycpu()->RR = 0;
       mycpu()->SJF = 2;
       mycpu()->FCFS = 0;
-      mycpu()->ticks+=time;
+      mycpu()->RR_proc = ptable.proc;
     }
     else if (queue == SJF)
     {
@@ -408,15 +406,12 @@ handle_change_queue(void)
       mycpu()->RR = 0;
       mycpu()->SJF = 0;
       mycpu()->FCFS = 1;
-      mycpu()->ticks+=time;
     }
     else if (queue == FIFO)
     {
       mycpu()->RR = 3;
       mycpu()->SJF = 0;
       mycpu()->FCFS = 0;
-      mycpu()->ticks+=time;
-
     }
   }
 }
@@ -424,16 +419,13 @@ handle_change_queue(void)
 void
 RR_scheduler(void)
 {
-  // TODO restore RR_proc
     struct proc *p;
     struct cpu *c = mycpu();
     c->proc = 0;
     for (int i = 0; i < NPROC; i++)
     {
       p = ((mycpu()->RR_proc - &ptable.proc[0]) + i) % NPROC + &ptable.proc[0];
-      if (p->state != RUNNABLE)
-        continue;
-      if (p->queue_number != RR)
+      if (p->state != RUNNABLE || p->queue_number != RR)
         continue;
 
       c->proc = p;
@@ -444,6 +436,7 @@ RR_scheduler(void)
       switchkvm();
 
       c->proc = 0;
+      return;
     }
 }
 
@@ -457,9 +450,7 @@ SJF_scheduler(void)
 
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
-      if (p->state != RUNNABLE )
-        continue;
-      if (p->queue_number != SJF)
+      if (p->state != RUNNABLE || p->queue_number != SJF)
         continue;
 
       int random = ticks * (p->pid + 1) + ((int)p->name[0] + 1) * 357 + 666;
@@ -478,6 +469,7 @@ SJF_scheduler(void)
       switchkvm();
 
       c->proc = 0;
+      return;
     }
 
 }
@@ -493,7 +485,7 @@ FCFS_scheduler(void)
     int iter = 0;
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
-      if (p->state != RUNNABLE)
+      if (p->state != RUNNABLE || p->queue_number != FIFO)
         continue;
       iter += 1;
       if(iter == 1){
