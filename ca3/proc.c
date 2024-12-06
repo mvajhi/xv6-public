@@ -478,14 +478,12 @@ FCFS_scheduler(void)
     struct cpu *c = mycpu();
     c->proc = 0;
     struct proc* first = ptable.proc;
+    
     int iter = 0;
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
       if (p->state != RUNNABLE)
         continue;
-      if (p->queue_number != FIFO)
-        continue;
-
       iter += 1;
       if(iter == 1){
         first = p;
@@ -498,13 +496,24 @@ FCFS_scheduler(void)
         }
       }
     }
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      if(iter == 0){
+      c->proc = 0;
+        return;
+    
+      }
       c->proc = first;
+      
       switchuvm(first);
       first->state = RUNNING;
 
       swtch(&(c->scheduler), first->context);
       switchkvm();
 
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
       c->proc = 0;
 }
 
@@ -530,7 +539,6 @@ void scheduler(void)
       RR_scheduler();
     else if (mycpu()->SJF > 0)
       SJF_scheduler();
-      // RR_scheduler();
     else if (mycpu()->FCFS > 0)
       FCFS_scheduler();
 
