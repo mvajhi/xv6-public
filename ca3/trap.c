@@ -109,7 +109,6 @@ trap(struct trapframe *tf)
     if(myproc() && myproc()->state == RUNNING &&
        tf->trapno == T_IRQ0+IRQ_TIMER)
        {
-
           if (ticks % 10 == 0)
           {
             if (mycpu()->RR > 0)
@@ -136,7 +135,7 @@ trap(struct trapframe *tf)
               mycpu()->FCFS--;
               if (mycpu()->FCFS == 0)
               {
-                mycpu()->FCFS = 1;
+                mycpu()->RR = 3;
                 yield();
               }
             }
