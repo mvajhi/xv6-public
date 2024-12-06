@@ -418,8 +418,9 @@ RR_scheduler(void)
     struct proc *p;
     struct cpu *c = mycpu();
     c->proc = 0;
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    for (int i = 0; i < NPROC; i++)
     {
+      p = ((mycpu()->RR_proc - &ptable.proc[0]) + i) % NPROC + &ptable.proc[0];
       if (p->state != RUNNABLE)
         continue;
       if (p->queue_number != RR)
@@ -747,6 +748,7 @@ update_queue_number(void)
   acquire(&ptable.lock);
   for (struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
+    // TODO 80 -> 800
     if (p->queue_number == RR || p->age < 80 || p->pid < 3)
       continue;
     p->queue_number++;

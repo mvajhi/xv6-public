@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     }
     if (pid == 0)
     {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 50; i++)
         {
             printf(1, "%d for child1\n", i);
         }
@@ -24,13 +24,13 @@ int main(int argc, char *argv[])
     }
     if (pid == 0)
     {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 50; i++)
         {
             printf(1, "%d for child2\n", i);
         }
         exit();
     }
-    for (int i = 0; i < 300; i++)
+    for (int i = 0; i < 400; i++)
     {
         printf(1, "%d for parent\n", i);
     }
