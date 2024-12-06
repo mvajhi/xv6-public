@@ -375,8 +375,10 @@ handle_change_queue(void)
     queue = SJF;
   else if (mycpu()->FCFS > 0)
     queue = FIFO;
-  else
+  else{
     mycpu()->RR = 3;
+    mycpu()->ticks=0;
+    }
   
   int is_empty = 1;
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -390,23 +392,31 @@ handle_change_queue(void)
   
   if (is_empty)
   {
+    int time = (ticks + mycpu()->ticks) % 600;
     if (queue == RR)
     {
       mycpu()->RR = 0;
       mycpu()->SJF = 2;
       mycpu()->FCFS = 0;
+      if(300 - time > 0 && time >=0)
+        mycpu()->ticks += 300 - time;
     }
     else if (queue == SJF)
     {
       mycpu()->RR = 0;
       mycpu()->SJF = 0;
       mycpu()->FCFS = 1;
+      if(500 - time > 0 && time >= 300)
+        mycpu()->ticks += 500 - time;
     }
     else if (queue == FIFO)
     {
       mycpu()->RR = 3;
       mycpu()->SJF = 0;
       mycpu()->FCFS = 0;
+      if(599 - time > 0 && time >=500)
+        mycpu()->ticks += 599 - time;
+
     }
   }
 }

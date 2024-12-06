@@ -9,9 +9,11 @@ struct cpu {
   int intena;                  // Were interrupts enabled before pushcli?
   struct proc *proc;           // The process running on this cpu or null
   struct proc *RR_proc;           
-  int RR;
-  int SJF;
-  int FCFS;
+  short RR;
+  short SJF;
+  short FCFS;
+  short ticks;
+
 };
 
 extern struct cpu cpus[NCPU];
