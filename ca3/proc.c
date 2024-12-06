@@ -375,7 +375,9 @@ handle_change_queue(void)
     queue = SJF;
   else if (mycpu()->FCFS > 0)
     queue = FIFO;
-
+  else
+    mycpu()->RR = 3;
+  
   int is_empty = 1;
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
@@ -409,33 +411,46 @@ handle_change_queue(void)
   }
 }
 
-// PAGEBREAK: 42
-//  Per-CPU process scheduler.
-//  Each CPU calls scheduler() after setting itself up.
-//  Scheduler never returns.  It loops, doing:
-//   - choose a process to run
-//   - swtch to start running that process
-//   - eventually that process transfers control
-//       via swtch back to the scheduler.
-void scheduler(void)
+void
+RR_scheduler(void)
 {
-  struct proc *p;
-  struct cpu *c = mycpu();
-  c->proc = 0;
+  // TODO restore RR_proc
+    cprintf("RR_scheduler\n");
+    struct proc *p;
+    struct cpu *c = mycpu();
+    c->proc = 0;
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+      if (p->state != RUNNABLE)
+        continue;
+      if (p->queue_number != RR)
+        continue;
 
-  for (;;)
-  {
-    // Enable interrupts on this processor.
-    sti();
-    
-    // Loop over process table looking for process to run.
-    acquire(&ptable.lock);
-    handle_change_queue();
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      c->proc = 0;
+    }
+}
+
+void
+SJF_scheduler(void)
+{
+    cprintf("SJF_scheduler\n");
+    struct proc *p;
+    struct cpu *c = mycpu();
+    c->proc = 0;
     sort_processes();
 
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
       if (p->state != RUNNABLE )
+        continue;
+      if (p->queue_number != SJF)
         continue;
 
       int random = ticks * (p->pid + 1) + ((int)p->name[0] + 1) * 357 + 666;
@@ -446,9 +461,6 @@ void scheduler(void)
         continue;
       //cprintf("Random number: %d for pid: %d\n", random, p->pid);
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -456,10 +468,76 @@ void scheduler(void)
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
       c->proc = 0;
     }
+
+}
+
+void
+FCFS_scheduler(void)
+{
+    cprintf("FCFS_scheduler\n");
+    struct proc *p;
+    struct cpu *c = mycpu();
+    c->proc = 0;
+    struct proc* first = ptable.proc;
+    int iter = 0;
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+      if (p->state != RUNNABLE)
+        continue;
+      if (p->queue_number != FIFO)
+        continue;
+
+      iter += 1;
+      if(iter == 1){
+        first = p;
+        continue;
+      }
+      else {
+        if(p->enter_time < first->enter_time){
+          first = p;
+          continue;
+        }
+      }
+    }
+      c->proc = first;
+      switchuvm(first);
+      first->state = RUNNING;
+
+      swtch(&(c->scheduler), first->context);
+      switchkvm();
+
+      c->proc = 0;
+}
+
+// PAGEBREAK: 42
+//  Per-CPU process scheduler.
+//  Each CPU calls scheduler() after setting itself up.
+//  Scheduler never returns.  It loops, doing:
+//   - choose a process to run
+//   - swtch to start running that process
+//   - eventually that process transfers control
+//       via swtch back to the scheduler.
+void scheduler(void)
+{
+  for (;;)
+  {
+    sti();
+    
+    acquire(&ptable.lock);
+    // TODO handle less time
+    handle_change_queue();
+
+    if (mycpu()->RR > 0)
+      RR_scheduler();
+    else if (mycpu()->SJF > 0)
+      SJF_scheduler();
+    else if (mycpu()->FCFS > 0)
+      FCFS_scheduler();
+    else
+      panic("No queue selected");
+
     release(&ptable.lock);
   }
 }
@@ -661,7 +739,7 @@ update_queue_number(void)
   acquire(&ptable.lock);
   for (struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if (p->queue_number == RR || p->age < 10 || p->pid < 3)
+    if (p->queue_number == RR || p->age < 80 || p->pid < 3)
       continue;
     p->queue_number++;
     p->age = 0;
