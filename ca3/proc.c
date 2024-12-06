@@ -532,7 +532,7 @@ void scheduler(void)
       SJF_scheduler();
       // RR_scheduler();
     else if (mycpu()->FCFS > 0)
-      SJF_scheduler();
+      FCFS_scheduler()
 
 
     else
