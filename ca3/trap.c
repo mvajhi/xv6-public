@@ -94,8 +94,6 @@ trap(struct trapframe *tf)
     myproc()->killed = 1;
   }
 
-  update_age();
-  update_queue_number();
 
   // Force process exit if it has been killed and is in user space.
   // (If it is still executing in the kernel, let it keep running
@@ -103,12 +101,55 @@ trap(struct trapframe *tf)
   if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
     exit();
 
+  update_age();
+  update_queue_number();
+
   // Force process to give up CPU on clock tick.
   // If interrupts were on while locks held, would need to check nlock.
-  // if(myproc() && myproc()->state == RUNNING &&
-  //    tf->trapno == T_IRQ0+IRQ_TIMER)
-    // if(ticks % 5 == 0)
-      // yield();
+    if(myproc() && myproc()->state == RUNNING &&
+       tf->trapno == T_IRQ0+IRQ_TIMER)
+       {
+
+          if (ticks % 10 == 0)
+          {
+            if (mycpu()->RR > 0)
+            {
+              mycpu()->RR--;
+              if (mycpu()->RR == 0)
+              {
+                mycpu()->RR_proc = myproc();
+                mycpu()->SJF = 2;
+                yield();
+              }
+            }
+            else if (mycpu()->SJF > 0)
+            {
+              mycpu()->SJF--;
+              if (mycpu()->SJF == 0)
+              {
+                mycpu()->FCFS = 1;
+                yield();
+              }
+            }
+            else if (mycpu()->FCFS > 0)
+            {
+              mycpu()->FCFS--;
+              if (mycpu()->FCFS == 0)
+              {
+                mycpu()->FCFS = 1;
+                yield();
+              }
+            }
+          }
+
+
+          if (mycpu()->RR > 0)
+          {
+            // just for RR
+              if(ticks % 5 == 0)
+                yield();
+          }
+       }
 
   // Check if the process has been killed since we yielded
   if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
