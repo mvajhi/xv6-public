@@ -402,7 +402,6 @@ handle_change_queue(void)
     }
     else if (queue == SJF)
     {
-      
       mycpu()->RR = 0;
       mycpu()->SJF = 0;
       mycpu()->FCFS = 1;
@@ -535,7 +534,6 @@ void scheduler(void)
     sti();
     
     acquire(&ptable.lock);
-    // TODO handle less time
     handle_change_queue();
 
     if (mycpu()->RR > 0)
