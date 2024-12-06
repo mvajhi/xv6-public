@@ -101,14 +101,14 @@ trap(struct trapframe *tf)
   if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
     exit();
 
-  update_age();
-  update_queue_number();
 
   // Force process to give up CPU on clock tick.
   // If interrupts were on while locks held, would need to check nlock.
     if(myproc() && myproc()->state == RUNNING &&
        tf->trapno == T_IRQ0+IRQ_TIMER)
        {
+          update_age();
+          update_queue_number();
           mycpu()->ticks++;
           int time = mycpu()->ticks;
           if (time % 10 == 0)

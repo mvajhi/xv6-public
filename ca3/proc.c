@@ -426,11 +426,10 @@ RR_scheduler(void)
       p = ((mycpu()->RR_proc - &ptable.proc[0]) + i) % NPROC + &ptable.proc[0];
       if (p->state != RUNNABLE || p->queue_number != RR)
         continue;
-
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-
+      p->age=0;
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -463,6 +462,7 @@ SJF_scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      p->age=0;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -506,10 +506,12 @@ FCFS_scheduler(void)
         return;
     
       }
+
       c->proc = first;
       
       switchuvm(first);
       first->state = RUNNING;
+      p->age=0;
 
       swtch(&(c->scheduler), first->context);
       switchkvm();
@@ -735,8 +737,9 @@ update_age(void)
   acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if(p->state != RUNNABLE || p->pid < 3)
-      continue;
+    if(p->state != RUNNABLE || p->pid < 3){
+      p->age = 0;
+      continue;}
     p->age++;
   }
   release(&ptable.lock);
