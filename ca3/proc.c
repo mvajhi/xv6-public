@@ -339,12 +339,12 @@ void sort_processes(void)
   struct proc *arg_min;
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if (p->state !=RUNNABLE || p->queue_number!= SJF )
+    if (p->state != RUNNABLE || p->queue_number != SJF)
       continue;
     arg_min = p;
     for (struct proc *i = p + 1; i < &ptable.proc[NPROC]; i++)
     {
-      if (i->state !=RUNNABLE || i->queue_number!=SJF)
+      if (i->state != RUNNABLE || i->queue_number != SJF)
         continue;
       if (arg_min->burst_time > i->burst_time && arg_min->pid != i->pid)
       {
@@ -363,8 +363,7 @@ void sort_processes(void)
   }
 }
 
-void
-handle_change_queue(void)
+void handle_change_queue(void)
 {
   struct proc *p;
 
@@ -375,11 +374,12 @@ handle_change_queue(void)
     queue = SJF;
   else if (mycpu()->FCFS > 0)
     queue = FIFO;
-  else{
+  else
+  {
     mycpu()->RR = 3;
-    mycpu()->ticks=0;
-    }
-  
+    mycpu()->ticks = 0;
+  }
+
   int is_empty = 1;
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
@@ -389,7 +389,7 @@ handle_change_queue(void)
       continue;
     is_empty = 0;
   }
-  
+
   if (is_empty)
   {
     mycpu()->ticks = 0;
@@ -415,111 +415,110 @@ handle_change_queue(void)
   }
 }
 
-void
-RR_scheduler(void)
+void RR_scheduler(void)
 {
-    struct proc *p;
-    struct cpu *c = mycpu();
+  struct proc *p;
+  struct cpu *c = mycpu();
+  c->proc = 0;
+  for (int i = 0; i < NPROC; i++)
+  {
+    p = ((mycpu()->RR_proc - &ptable.proc[0]) + i) % NPROC + &ptable.proc[0];
+    if (p->state != RUNNABLE || p->queue_number != RR)
+      continue;
+    c->proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
+    p->age = 0;
+    swtch(&(c->scheduler), p->context);
+    switchkvm();
+    mycpu()->RR_proc = p + 1;
+
     c->proc = 0;
-    for (int i = 0; i < NPROC; i++)
-    {
-      p = ((mycpu()->RR_proc - &ptable.proc[0]) + i) % NPROC + &ptable.proc[0];
-      if (p->state != RUNNABLE || p->queue_number != RR)
-        continue;
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-      p->age=0;
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-      mycpu()->RR_proc = p+1;
-      
-      c->proc = 0;
-      return;
-    }
+    return;
+  }
 }
 
-void
-SJF_scheduler(void)
+void SJF_scheduler(void)
 {
-    struct proc *p;
-    struct cpu *c = mycpu();
+  struct proc *p;
+  struct cpu *c = mycpu();
+  c->proc = 0;
+  sort_processes();
+
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state != RUNNABLE || p->queue_number != SJF)
+      continue;
+
+    int random = ticks * (p->pid + 1) + ((int)p->name[0] + 1) * 357 + 666;
+    random = ((random * random) % 100);
+
+    // cprintf("Random number: %d for pid: %d\n", random, p->pid);
+    if (random > p->confidence)
+      continue;
+    // cprintf("Random number: %d for pid: %d\n", random, p->pid);
+
+    c->proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
+    p->age = 0;
+
+    swtch(&(c->scheduler), p->context);
+    switchkvm();
+
     c->proc = 0;
-    sort_processes();
-
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    {
-      if (p->state != RUNNABLE || p->queue_number != SJF)
-        continue;
-
-      int random = ticks * (p->pid + 1) + ((int)p->name[0] + 1) * 357 + 666;
-      random = ((random * random) % 100);
-      
-      // cprintf("Random number: %d for pid: %d\n", random, p->pid);
-      if (random > p->confidence)
-        continue;
-      //cprintf("Random number: %d for pid: %d\n", random, p->pid);
-
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-      p->age=0;
-
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-
-      c->proc = 0;
-      return;
-    }
-
+    return;
+  }
 }
 
-void
-FCFS_scheduler(void)
+void FCFS_scheduler(void)
 {
-    struct proc *p;
-    struct cpu *c = mycpu();
-    c->proc = 0;
-    struct proc* first = ptable.proc;
-    
-    int iter = 0;
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  struct proc *p;
+  struct cpu *c = mycpu();
+  c->proc = 0;
+  struct proc *first = ptable.proc;
+
+  int iter = 0;
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state != RUNNABLE || p->queue_number != FIFO)
+      continue;
+    iter += 1;
+    if (iter == 1)
     {
-      if (p->state != RUNNABLE || p->queue_number != FIFO)
-        continue;
-      iter += 1;
-      if(iter == 1){
+      first = p;
+      continue;
+    }
+    else
+    {
+      if (p->enter_time < first->enter_time)
+      {
         first = p;
         continue;
       }
-      else {
-        if(p->enter_time < first->enter_time){
-          first = p;
-          continue;
-        }
-      }
     }
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      if(iter == 0){
-      c->proc = 0;
-        return;
-    
-      }
+  }
+  // Switch to chosen process.  It is the process's job
+  // to release ptable.lock and then reacquire it
+  // before jumping back to us.
+  if (iter == 0)
+  {
+    c->proc = 0;
+    return;
+  }
 
-      c->proc = first;
-      
-      switchuvm(first);
-      first->state = RUNNING;
-      p->age=0;
+  c->proc = first;
 
-      swtch(&(c->scheduler), first->context);
-      switchkvm();
+  switchuvm(first);
+  first->state = RUNNING;
+  p->age = 0;
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+  swtch(&(c->scheduler), first->context);
+  switchkvm();
+
+  // Process is done running for now.
+  // It should have changed its p->state before coming back.
+  c->proc = 0;
 }
 
 // PAGEBREAK: 42
@@ -535,7 +534,7 @@ void scheduler(void)
   for (;;)
   {
     sti();
-    
+
     acquire(&ptable.lock);
     handle_change_queue();
 
@@ -545,7 +544,6 @@ void scheduler(void)
       SJF_scheduler();
     else if (mycpu()->FCFS > 0)
       FCFS_scheduler();
-
 
     else
       panic("No queue selected");
@@ -731,23 +729,23 @@ void procdump(void)
   }
 }
 
-void
-update_age(void)
+void update_age(void)
 {
   struct proc *p;
   acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if(p->state != RUNNABLE || p->pid < 3){
+    if (p->state != RUNNABLE || p->pid < 3)
+    {
       p->age = 0;
-      continue;}
+      continue;
+    }
     p->age++;
   }
   release(&ptable.lock);
 }
 
-void
-update_queue_number(void)
+void update_queue_number(void)
 {
   acquire(&ptable.lock);
   for (struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -763,8 +761,7 @@ update_queue_number(void)
   release(&ptable.lock);
 }
 
-void
-update_ticks(void)
+void update_ticks(void)
 {
   acquire(&ptable.lock);
   for (struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -775,4 +772,137 @@ update_ticks(void)
     cprintf("Burst time for %d: %d\n", p->pid, p->burst_time);
   }
   release(&ptable.lock);
+}
+
+// TODO
+
+// sysproc.c (add these implementations)
+int sys_init_estimations(void)
+{
+  int pid, burst_time, confidence;
+
+  if (argint(0, &pid) < 0 || argint(1, &burst_time) < 0 || argint(2, &confidence) < 0)
+    return -1;
+
+  if (confidence < 0 || confidence > 100)
+    return -1;
+
+  struct proc *p;
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == pid)
+    {
+      p->burst_time = burst_time;
+      p->confidence = confidence;
+      break;
+    }
+  }
+  release(&ptable.lock);
+  return 0;
+}
+
+int sys_change_queue(void)
+{
+  int pid, queue_num;
+
+  if (argint(0, &pid) < 0 || argint(1, &queue_num) < 0)
+    return -1;
+
+  struct proc *p;
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == pid)
+    {
+      p->queue_number = queue_num;
+      break;
+    }
+  }
+  release(&ptable.lock);
+  return 0;
+}
+
+
+
+
+
+int digitcount(int num) {
+    if (num == 0) return 1;
+    int count = 0;
+    while (num != 0) {
+        num = num / 10;
+        count++;
+    }
+    return count;
+}
+
+
+void printspaces(int count) {
+    for (int i = 0; i < count; i++) {
+        cprintf(" ");
+    }
+}
+
+
+int
+sys_print_info(void)
+{
+    static char *states[] = {
+        [UNUSED]    "unused",
+        [EMBRYO]    "embryo",
+        [SLEEPING]  "sleep",
+        [RUNNABLE]  "runnable",
+        [RUNNING]   "running",
+        [ZOMBIE]    "zombie"
+    };
+    
+    static int columns[] = {16, 8, 12, 8, 8, 8, 8, 8};
+    
+    acquire(&ptable.lock);
+    
+    cprintf("Name           PID     State       Queue   Burst   Conf    Age     Enter\n");
+    cprintf("-------------------------------------------------------------------------\n");
+    
+    struct proc *p;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+        if(p->state == UNUSED)
+            continue;
+            
+        const char *state;
+        if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
+            state = states[p->state];
+        else
+            state = "???";
+            
+        cprintf("%s", p->name);
+        printspaces(columns[0] - strlen(p->name));
+        
+        cprintf("%d", p->pid);
+        printspaces(columns[1] - digitcount(p->pid));
+        
+        cprintf("%s", state);
+        printspaces(columns[2] - strlen(state));
+        
+        cprintf("%d", p->queue_number);
+        printspaces(columns[3] - digitcount(p->queue_number));
+        
+        cprintf("%d", p->burst_time);
+        printspaces(columns[4] - digitcount(p->burst_time));
+        
+        cprintf("%d", p->confidence);
+        printspaces(columns[5] - digitcount(p->confidence));
+        
+        cprintf("%d", p->age);
+        printspaces(columns[6] - digitcount(p->age));
+        
+
+        cprintf("%d", p->enter_time);
+        printspaces(columns[7] - digitcount(p->enter_time));
+        
+        cprintf("\n");
+    }
+    
+    release(&ptable.lock);
+    return 0;
 }
