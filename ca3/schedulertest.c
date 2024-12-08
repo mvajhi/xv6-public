@@ -59,18 +59,20 @@ main(void)
     }
     
     // Print process information
+    
     print_info();
     
     // Wait for a while to see the scheduling in action
-    sleep(100);
+    sleep(10);
     
     // Print final state
     print_info();
     
     // Clean up by killing all test processes
     for(int i = 0; i < 7; i++) {
+        print_info();
         wait();
     }
-    
+    print_info();
     exit();
 }

@@ -184,6 +184,7 @@ UPROGS=\
 	_test_RR\
 	_syscallTest\
 	_schedulertest\
+	_testFor2CPU\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
