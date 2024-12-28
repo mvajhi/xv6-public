@@ -8,10 +8,10 @@ struct spinlock {
   uint pcs[10];      // The call stack (an array of program counters)
                      // that locked the lock.
 };
-struct reeintrant_lock{
+struct reentrant_lock{
+
     struct spinlock lock;
     struct proc* holder;
-    struct proc* owner;
     int recursion_depth;
 };
 
