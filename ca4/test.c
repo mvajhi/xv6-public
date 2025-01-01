@@ -19,12 +19,32 @@ void recursive_function(int depth) {
     release_reentrant_lock(&test_lock);
 }
 
-void simple_test() {
-    printf(1, "Starting simple test\n");
+void competing_function() {
+    printf(1, "Competing thread %d trying to acquire lock\n", getpid());
+    reentrant_acquire(&test_lock);
+    printf(1, "Competing thread %d acquired lock (should not happen)\n", getpid());
+    release_reentrant_lock(&test_lock);
+    exit();
+}
 
-    recursive_function(3);
+void test_with_competition() {
+    int pid;
 
-    printf(1, "Finished simple test\n");
+    printf(1, "Starting competition test\n");
+
+    if ((pid = fork()) == 0) {
+        // Child process: try to acquire the lock
+        sleep(10); // Allow parent process to acquire lock first
+        competing_function();
+    } else {
+        // Parent process: acquire the lock recursively
+        recursive_function(50);
+
+        // Wait for the child to finish
+        wait();
+    }
+
+    printf(1, "Finished competition test\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -32,7 +52,7 @@ int main(int argc, char *argv[]) {
     InitReentrantLock(&test_lock, "test_lock");
 
     printf(1, "Running tests\n");
-    simple_test();
+    test_with_competition();
 
     exit();
 }

@@ -11,7 +11,7 @@
 
 void
 initlock(struct spinlock *lk, char *name)
-{pushcli();
+{
   lk->name = name;
   lk->locked = 0;
   lk->cpu = 0;
@@ -48,7 +48,7 @@ release(struct spinlock *lk)
 {
   if(!holding(lk))
     panic("release");
-pushcli();
+
   lk->pcs[0] = 0;
   lk->cpu = 0;
 
@@ -235,7 +235,7 @@ void release_reentrant_lock(struct reentrant_lock *rlock) {
         // Re-disable interrupts before releasing the spinlock
         
         pushcli();
-        
+        cprintf("release\n");
         release(&rlock->lock);
         
     }
