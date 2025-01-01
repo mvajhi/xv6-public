@@ -7,7 +7,7 @@
 #include "x86.h"
 #include "syscall.h"
 #include "mp.h"
-#include "spinlock.h"
+
 
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
@@ -108,9 +108,7 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_test(void);
-extern int sys_InitReentrantLock(void);
-extern int sys_reentrant_acquire(void);
-extern int sys_release_reentrant_lock(void);
+
 extern int sys_nsyscalls(void);
 
 static int (*syscalls[])(void) = {
@@ -137,9 +135,7 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_test]    sys_test,
 
-[SYS_InitReentrantLock] sys_InitReentrantLock,
-[SYS_reentrant_acquire] sys_reentrant_acquire,
-[SYS_release_reentrant_lock] sys_release_reentrant_lock,
+
 [SYS_nsyscalls]  sys_nsyscalls,
 };
 
