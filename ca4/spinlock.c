@@ -202,23 +202,26 @@ void InitReentrantLock(struct reentrant_lock *rlock, char *name) {
     rlock->recursion_depth = 0;
 }
 void reentrant_acquire(struct reentrant_lock *rlock) {
+  
     struct proc *current_proc = myproc();
 
-    if (rlock->holder == current_proc) {
+    cprintf("is it lock : %d\n",&rlock->lock.locked);
+    if (rlock->holder->pid == current_proc->pid) {
         // Lock is already held by the current process
         rlock->recursion_depth++;
+
         return;
     }
-
+    
     // Acquire the spinlock (disables interrupts)
     acquire(&rlock->lock);
-
     // Set the holder and initialize recursion depth
     rlock->holder = current_proc;
     rlock->recursion_depth = 1;
-
+    
     // Enable interrupts after acquiring the lock
-    popcli();
+    
+    
 }
 
 void release_reentrant_lock(struct reentrant_lock *rlock) {
@@ -234,7 +237,7 @@ void release_reentrant_lock(struct reentrant_lock *rlock) {
 
         // Re-disable interrupts before releasing the spinlock
         
-        pushcli();
+        
         cprintf("release\n");
         release(&rlock->lock);
         

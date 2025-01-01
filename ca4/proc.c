@@ -11,7 +11,7 @@ struct {
   struct spinlock lock;
   struct proc proc[NPROC];
 } ptable;
-struct reentrant_lock rLock;
+struct reentrant_lock rlock;
 
 static struct proc *initproc;
 
@@ -533,4 +533,23 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+void rinit(void){
+  InitReentrantLock(&rlock,"salam");
+}
+
+int test(int depth) {
+    if (depth <= 0)
+        return 1;
+
+    // printf(1, "Thread %d acquiring lock at depth %d\n", getpid(), depth);
+    reentrant_acquire(&rlock);
+
+    cprintf("Thread %d acquired lock at depth %d\n", myproc()->pid, depth);
+    test(depth - 1);
+
+    cprintf("Thread %d releasing lock at depth %d\n", myproc()->pid, depth);
+    release_reentrant_lock(&rlock);
+    return 0;
 }
