@@ -20,3 +20,6 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
+#define SYS_InitReentrantLock 22
+#define SYS_reentrant_acquire 23
+#define SYS_release_reentrant_lock 24

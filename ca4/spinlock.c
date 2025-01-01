@@ -11,7 +11,7 @@
 
 void
 initlock(struct spinlock *lk, char *name)
-{
+{pushcli();
   lk->name = name;
   lk->locked = 0;
   lk->cpu = 0;
@@ -48,7 +48,7 @@ release(struct spinlock *lk)
 {
   if(!holding(lk))
     panic("release");
-
+pushcli();
   lk->pcs[0] = 0;
   lk->cpu = 0;
 
@@ -123,75 +123,120 @@ popcli(void)
   if(mycpu()->ncli == 0 && mycpu()->intena)
     sti();
 }
-void InitReentrantLock(struct reentrant_lock *rlock,char* name){
+// void InitReentrantLock(struct reentrant_lock *rlock,char* name){
     
-    initlock(&(rlock->lock),name);
+//     initlock(&(rlock->lock),name);
+//     rlock->holder = 0;
+//     rlock->recursion_depth = 0;
+    
+    
+
+// }
+// void reenetrant_acquire(struct reentrant_lock *rlock){
+//   struct proc* p = myproc();
+//   pushcli();
+//   struct spinlock *lk = &rlock->lock;
+  
+//   if(p->pid == rlock->holder->pid){
+//     rlock->recursion_depth += 1;
+//     getcallerpcs(&lk,lk->pcs);
+//     return;
+    
+    
+//   }
+
+
+
+
+  
+//   if(holding(lk))
+//     panic("acquire");
+
+//   // The xchg is atomic.
+//   while(xchg(&lk->locked, 1) != 0)
+//     ;
+
+//   // Tell the C compiler and the processor to not move loads or stores
+//   // past this point, to ensure that the critical section's memory
+//   // references happen after the lock is acquired.
+//   __sync_synchronize();
+//   rlock->holder =  p;
+//   rlock->recursion_depth = 1;
+//   // Record info about lock acquisition for debugging.
+//     lk->cpu = mycpu();
+//     getcallerpcs(&lk, lk->pcs);
+  
+// }
+// void release_reentrant_lock(struct reentrant_lock *rlock){
+  
+//   struct spinlock* lk = &rlock->lock;
+//   if(rlock->recursion_depth > 1){
+//     rlock->recursion_depth -= 1;
+//     return;
+//   }
+//   if(!holding(lk))
+//     panic("release");
+
+//   lk->pcs[0] = 0;
+//   lk->cpu = 0;
+//   rlock->holder = 0;
+//   rlock->recursion_depth = 0;
+//   // Tell the C compiler and the processor to not move loads or stores
+//   // past this point, to ensure that all the stores in the critical
+//   // section are visible to other cores before the lock is released.
+//   // Both the C compiler and the hardware may re-order loads and
+//   // stores; __sync_synchronize() tells them both not to.
+//   __sync_synchronize();
+
+//   // Release the lock, equivalent to lk->locked = 0.
+//   // This code can't use a C assignment, since it might
+//   // not be atomic. A real OS would use C atomics here.
+//   asm volatile("movl $0, %0" : "+m" (lk->locked) : );
+
+//   popcli();
+
+// }
+void InitReentrantLock(struct reentrant_lock *rlock, char *name) {
+    initlock(&rlock->lock, name);
     rlock->holder = 0;
     rlock->recursion_depth = 0;
-
-    
-
 }
-void renetrant_acquire(struct reentrant_lock *rlock,struct proc* p){
-  pushcli();
-  struct spinlock *lk = &rlock->lock;
-  
-  if(p->pid == rlock->holder){
-    rlock->recursion_depth += 1;
-    getcallerpcs(&lk,lk->pcs);
-    return;
-    
-    
-  }
+void reentrant_acquire(struct reentrant_lock *rlock) {
+    struct proc *current_proc = myproc();
 
+    if (rlock->holder == current_proc) {
+        // Lock is already held by the current process
+        rlock->recursion_depth++;
+        return;
+    }
 
+    // Acquire the spinlock (disables interrupts)
+    acquire(&rlock->lock);
 
+    // Set the holder and initialize recursion depth
+    rlock->holder = current_proc;
+    rlock->recursion_depth = 1;
 
-  
-  if(holding(&lk))
-    panic("acquire");
-
-  // The xchg is atomic.
-  while(xchg(&lk->locked, 1) != 0)
-    ;
-
-  // Tell the C compiler and the processor to not move loads or stores
-  // past this point, to ensure that the critical section's memory
-  // references happen after the lock is acquired.
-  __sync_synchronize();
-  rlock->holder =  p->pid;
-  rlock->recursion_depth = 1;
-  // Record info about lock acquisition for debugging.
-    lk->cpu = mycpu();
-    getcallerpcs(&lk, lk->pcs);
-  
-}
-void release_reentrant_lock(struct reentrant_lock *rlock,struct proc* p){
-  struct spinlock* lk = &rlock->lock;
-  if(rlock->recursion_depth > 1){
-    rlock->recursion_depth -= 1;
-    return;
-  }
-  if(!holding(lk))
-    panic("release");
-
-  lk->pcs[0] = 0;
-  lk->cpu = 0;
-  rlock->holder = 0;
-  rlock->recursion_depth = 0;
-  // Tell the C compiler and the processor to not move loads or stores
-  // past this point, to ensure that all the stores in the critical
-  // section are visible to other cores before the lock is released.
-  // Both the C compiler and the hardware may re-order loads and
-  // stores; __sync_synchronize() tells them both not to.
-  __sync_synchronize();
-
-  // Release the lock, equivalent to lk->locked = 0.
-  // This code can't use a C assignment, since it might
-  // not be atomic. A real OS would use C atomics here.
-  asm volatile("movl $0, %0" : "+m" (lk->locked) : );
-
-  popcli();
-
+    // Enable interrupts after acquiring the lock
+    popcli();
 }
 
+void release_reentrant_lock(struct reentrant_lock *rlock) {
+    if (rlock->holder != myproc()) {
+        panic("release_reentrant_lock: lock not held by current process");
+    }
+
+    rlock->recursion_depth--;
+
+    if (rlock->recursion_depth == 0) {
+        // Fully release the lock
+        rlock->holder = 0;
+
+        // Re-disable interrupts before releasing the spinlock
+        
+        pushcli();
+        
+        release(&rlock->lock);
+        
+    }
+}

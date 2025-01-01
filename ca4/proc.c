@@ -11,6 +11,7 @@ struct {
   struct spinlock lock;
   struct proc proc[NPROC];
 } ptable;
+struct reentrant_lock rLock;
 
 static struct proc *initproc;
 
@@ -25,6 +26,7 @@ pinit(void)
 {
   initlock(&ptable.lock, "ptable");
 }
+
 
 // Must be called with interrupts disabled
 int

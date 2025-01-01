@@ -1,38 +1,38 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
-#include "defs.h"
 #include "spinlock.h"
 
-struct {
-  struct reentrant_lock lock;
-  int result;
-} fuck_result;
+struct reentrant_lock test_lock;
 
-void fuck(int i)
-{
-    acquire_reentrant(&fuck_result.lock);
-    if (i <= 1)
-    {
-        fuck_result.result *= 1;
-    }
-    else
-    {
-        fuck(i-1);
-        fuck_result.result *= i;
-    }
-    release_reentrant(&fuck_result.lock);
+void recursive_function(int depth) {
+    if (depth <= 0)
+        return;
+
+    printf(1, "Thread %d acquiring lock at depth %d\n", getpid(), depth);
+    reentrant_acquire(&test_lock);
+
+    printf(1, "Thread %d acquired lock at depth %d\n", getpid(), depth);
+    recursive_function(depth - 1);
+
+    printf(1, "Thread %d releasing lock at depth %d\n", getpid(), depth);
+    release_reentrant_lock(&test_lock);
 }
 
-int
-main(int argc, char *argv[])
-{
-    acquire_reentrant(&fuck_result.lock);
-    InitReentrantLock(&fuck_result.lock, "fuck_you");
-    fuck_result.result = 1;
-    fuck(10);
-    printf(1, "%i\n", fuck_result.result);
-    fuck_result.result = 1;
-    release_reentrant(&fuck_result.lock);
+void simple_test() {
+    printf(1, "Starting simple test\n");
+
+    recursive_function(3);
+
+    printf(1, "Finished simple test\n");
+}
+
+int main(int argc, char *argv[]) {
+    printf(1, "Initializing reentrant lock\n");
+    InitReentrantLock(&test_lock, "test_lock");
+
+    printf(1, "Running tests\n");
+    simple_test();
+
     exit();
 }
