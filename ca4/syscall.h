@@ -23,3 +23,4 @@
 #define SYS_InitReentrantLock 22
 #define SYS_reentrant_acquire 23
 #define SYS_release_reentrant_lock 24
+#define SYS_nsyscalls 25
