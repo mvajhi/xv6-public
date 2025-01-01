@@ -12,7 +12,7 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 struct reentrant_lock rlock;
-
+struct spinlock rspimlock;
 static struct proc *initproc;
 
 int nextpid = 1;

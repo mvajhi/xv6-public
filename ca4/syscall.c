@@ -6,6 +6,8 @@
 #include "proc.h"
 #include "x86.h"
 #include "syscall.h"
+#include "mp.h"
+#include "spinlock.h"
 
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
@@ -14,6 +16,8 @@
 // to a saved program counter, and then the first argument.
 
 // Fetch the int at addr from the current process.
+struct nsyslock nsys;
+
 int
 fetchint(uint addr, int *ip)
 {
@@ -104,6 +108,11 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_test(void);
+extern int sys_InitReentrantLock(void);
+extern int sys_reentrant_acquire(void);
+extern int sys_release_reentrant_lock(void);
+extern int sys_nsyscalls(void);
+
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
@@ -128,6 +137,10 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_test]    sys_test,
 
+[SYS_InitReentrantLock] sys_InitReentrantLock,
+[SYS_reentrant_acquire] sys_reentrant_acquire,
+[SYS_release_reentrant_lock] sys_release_reentrant_lock,
+[SYS_nsyscalls]  sys_nsyscalls,
 };
 
 void
@@ -144,4 +157,23 @@ syscall(void)
             curproc->pid, curproc->name, num);
     curproc->tf->eax = -1;
   }
+  cli();
+  int CPUid = cpuid();
+  sti();
+  cpus[CPUid].nsyscall++;
+  acquire(&nsys.lk);
+  nsys.n++;
+  release(&nsys.lk);
+}
+
+void getnsyscall(void) {
+    cprintf("%d, %d, %d, %d, ",
+            cpus[0].nsyscall,
+            cpus[1].nsyscall,
+            cpus[2].nsyscall,
+            cpus[3].nsyscall);
+    acquire(&nsys.lk);
+    cprintf("%d\n",
+            nsys.n);
+    release(&nsys.lk);
 }
