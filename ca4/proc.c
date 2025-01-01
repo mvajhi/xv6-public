@@ -553,3 +553,8 @@ int test(int depth) {
     release_reentrant_lock(&rlock);
     return 0;
 }
+
+int nsyscalls(void) {
+    getnsyscall();
+    return 0;
+}

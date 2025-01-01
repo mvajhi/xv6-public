@@ -97,3 +97,6 @@ sys_test(void){
   
   return test(a);
 }
+int sys_nsyscalls(void) {
+    return nsyscalls();
+}
