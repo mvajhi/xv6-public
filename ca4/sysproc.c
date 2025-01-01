@@ -94,6 +94,6 @@ int
 sys_test(void){
   int a;
   argint(0,&a);
-  
+  test(a);
   return test(a);
 }
