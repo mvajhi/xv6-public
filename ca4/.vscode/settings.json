@@ -58,6 +58,7 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "proc.h": "c",
-    "mp.h": "c"
+    "mp.h": "c",
+    "spinlock.h": "c"
   }
 }
