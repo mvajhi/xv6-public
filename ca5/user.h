@@ -23,7 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-char* openshmem(int);
+char *openshmem(int);
 int closeshmem(int);
 
 
