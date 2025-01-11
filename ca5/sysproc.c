@@ -93,9 +93,19 @@ sys_uptime(void)
 char* sys_openshmem(void) {
     int id;
     if (argint(0, &id) < 0) {
-        cprintf("err\n");
+        cprintf("arg err\n");
         return 0;
     }
 
     return openshmem(id);
+}
+
+int sys_closeshmem(void) {
+    int id;
+    if (argint(0, &id) < 0) {
+        cprintf("arg err\n");
+        return 0;
+    }
+
+    return closeshmem(id);
 }
