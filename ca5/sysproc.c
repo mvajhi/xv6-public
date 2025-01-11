@@ -89,3 +89,13 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+char* sys_openshmem(void) {
+    int id;
+    if (argint(0, &id) < 0) {
+        cprintf("err\n");
+        return 0;
+    }
+
+    return openshmem(id);
+}
