@@ -109,3 +109,27 @@ int sys_closeshmem(void) {
 
     return closeshmem(id);
 }
+
+void sys_initspin(void) {
+    struct spinlock* lock;
+    if(argptr(0, (void*)&lock, sizeof(uint) + sizeof(char*) + sizeof(char*) + sizeof(uint)) < 0)
+        return;
+    initlock(lock, "spin");
+    return;
+}
+
+void sys_accspin(void) {
+    struct spinlock* lock;
+    if(argptr(0, (void*)&lock, sizeof(uint) + sizeof(char*) + sizeof(char*) + sizeof(uint)) < 0)
+        return;
+    acquire(lock);
+    return;
+}
+
+void sys_relspin(void) {
+  struct spinlock* lock;
+  if(argptr(0, (void*)&lock, sizeof(uint) + sizeof(char*) + sizeof(char*) + sizeof(uint)) < 0)
+    return;
+  release(lock);
+  return;
+}

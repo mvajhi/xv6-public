@@ -22,3 +22,6 @@
 #define SYS_close  21
 #define SYS_openshmem 22
 #define SYS_closeshmem 23
+#define SYS_initspin 24
+#define SYS_accspin 25
+#define SYS_relspin 26

@@ -105,6 +105,9 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_openshmem(void);
 extern int sys_closeshmem(void);
+extern int sys_initspin(void);
+extern int sys_accspin(void);
+extern int sys_relspin(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -130,6 +133,9 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_openshmem] sys_openshmem,
 [SYS_closeshmem] sys_closeshmem,
+[SYS_initspin] sys_initspin,
+[SYS_accspin] sys_accspin,
+[SYS_relspin] sys_relspin,
 };
 
 void

@@ -1,5 +1,6 @@
 struct stat;
 struct rtcdate;
+struct spinlock;
 
 // system calls
 int fork(void);
@@ -25,6 +26,9 @@ int sleep(int);
 int uptime(void);
 char *openshmem(int);
 int closeshmem(int);
+void initspin(struct spinlock*);
+void accspin(struct spinlock*);
+void relspin(struct spinlock*);
 
 
 // ulib.c
