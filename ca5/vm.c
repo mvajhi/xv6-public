@@ -104,15 +104,15 @@ mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 // This table defines the kernel's mappings, which are present in
 // every process's page table.
 static struct kmap {
-  void *virt;
-  uint phys_start;
-  uint phys_end;
-  int perm;
+    void* virt;
+    uint phys_start;
+    uint phys_end;
+    int perm;
 } kmap[] = {
- { (void*)KERNBASE, 0,             EXTMEM,    PTE_W}, // I/O space
- { (void*)KERNLINK, V2P(KERNLINK), V2P(data), 0},     // kern text+rodata
- { (void*)data,     V2P(data),     PHYSTOP,   PTE_W}, // kern data+memory
- { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // more devices
+    {(void*)KERNBASE, 0, EXTMEM, PTE_W},            // I/O space
+    {(void*)KERNLINK, V2P(KERNLINK), V2P(data), 0}, // kern text+rodata
+    {(void*)data, V2P(data), PHYSTOP, PTE_W},       // kern data+memory
+    {(void*)DEVSPACE, DEVSPACE, 0, PTE_W},          // more devices
 };
 
 // Set up kernel part of a page table.
