@@ -6,7 +6,6 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
-#include "spinlock.h"
 
 int
 sys_fork(void)
@@ -89,14 +88,4 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
-}
-int
-sys_test(void){
-  int a;
-  argint(0,&a);
-  test(a);
-  return test(a);
-}
-int sys_nsyscalls(void) {
-    return nsyscalls();
 }
